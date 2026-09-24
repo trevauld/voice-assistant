@@ -344,7 +344,7 @@ async function probeKeyCredits(provider, key, badge) {
 
   if (provider === 'elevenlabs') {
     try {
-      const res = await fetch('https://api.elevenlabs.io/v1/user/subscription', { headers: { 'xi-api-key': key } });
+      const res = await fetch('https://elevenlabs-proxy.keremk.workers.dev/v1/user/subscription', { headers: { 'xi-api-key': key } });
       if (res.ok) {
         const data = await res.json();
         const remaining = data.character_limit - data.character_count;
@@ -686,7 +686,7 @@ function stopAndSendRecording() {
         formData.append('model_id', 'scribe_v2');
         if (selectedLang) formData.append('language_code', selectedLang);
 
-        const sttResponse = await fetch('https://api.elevenlabs.io/v1/speech-to-text', {
+        const sttResponse = await fetch('https://elevenlabs-proxy.keremk.workers.dev/v1/speech-to-text', {
           method: 'POST',
           headers: { 'xi-api-key': sttKey },
           body: formData,
@@ -757,7 +757,7 @@ function stopAndSendRecording() {
         const voiceId = selectedVoiceTag.replace('xi:', '');
         if (!ttsKey) throw new Error("ElevenLabs API Key is required for TTS synthesis.");
 
-        const ttsResponse = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_22050_32`, {
+        const ttsResponse = await fetch(`https://elevenlabs-proxy.keremk.workers.dev/v1/text-to-speech/${voiceId}?output_format=mp3_22050_32`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
