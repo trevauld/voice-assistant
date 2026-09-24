@@ -344,7 +344,7 @@ async function probeKeyCredits(provider, key, badge) {
   if (!key) {
     if (badge) {
       badge.style.color = '#888';
-      badge.innerText = t.reqKey;
+      badge.innerText = t.reqKey; badge.dataset.state = 'req';
     }
     return;
   }
@@ -357,13 +357,13 @@ async function probeKeyCredits(provider, key, badge) {
         const remaining = data.character_limit - data.character_count;
         if (badge) {
           badge.style.color = '#00ff66';
-          badge.innerText = t.credLeft.replace('{rem}', remaining.toLocaleString()).replace('{limit}', data.character_limit.toLocaleString());
+          badge.innerText = t.credLeft.replace('{rem}', remaining.toLocaleString()).replace('{limit}', data.character_limit.toLocaleString()); badge.dataset.state = 'limit'; badge.dataset.rem = remaining.toLocaleString(); badge.dataset.limit = data.character_limit.toLocaleString();
         }
       } else {
-        if (badge) { badge.style.color = '#ff4d4d'; badge.innerText = t.noCred; }
+        if (badge) { badge.style.color = '#ff4d4d'; badge.innerText = t.noCred; badge.dataset.state = 'nocred'; }
       }
     } catch (e) {
-      if (badge) { badge.style.color = '#ff4d4d'; badge.innerText = t.noCred; }
+      if (badge) { badge.style.color = '#ff4d4d'; badge.innerText = t.noCred; badge.dataset.state = 'nocred'; }
     }
   } else if (provider === 'deepgram') {
     try {
@@ -373,12 +373,12 @@ async function probeKeyCredits(provider, key, badge) {
       });
       
       if (res.status === 400 || res.ok) {
-        if (badge) { badge.style.color = '#00ff66'; badge.innerText = t.credAvail; }
+        if (badge) { badge.style.color = '#00ff66'; badge.innerText = t.credAvail; badge.dataset.state = 'avail'; }
       } else {
-        if (badge) { badge.style.color = '#ff4d4d'; badge.innerText = t.noCred; }
+        if (badge) { badge.style.color = '#ff4d4d'; badge.innerText = t.noCred; badge.dataset.state = 'nocred'; }
       }
     } catch (e) {
-      if (badge) { badge.style.color = '#ff4d4d'; badge.innerText = t.noCred; }
+      if (badge) { badge.style.color = '#ff4d4d'; badge.innerText = t.noCred; badge.dataset.state = 'nocred'; }
     }
   }
 }
@@ -392,7 +392,7 @@ async function checkLlmCredits() {
   if (!llmKey) {
     if (badge) {
       badge.style.color = '#888';
-      badge.innerText = t.reqKey;
+      badge.innerText = t.reqKey; badge.dataset.state = 'req';
     }
     return;
   }
@@ -411,12 +411,12 @@ async function checkLlmCredits() {
 
     const res = await fetch(url, { headers });
     if (res.ok) {
-      if (badge) { badge.style.color = '#00ff66'; badge.innerText = t.credAvail; }
+      if (badge) { badge.style.color = '#00ff66'; badge.innerText = t.credAvail; badge.dataset.state = 'avail'; }
     } else {
-      if (badge) { badge.style.color = '#ff4d4d'; badge.innerText = t.noCred; }
+      if (badge) { badge.style.color = '#ff4d4d'; badge.innerText = t.noCred; badge.dataset.state = 'nocred'; }
     }
   } catch (e) {
-    if (badge) { badge.style.color = '#ff4d4d'; badge.innerText = t.noCred; }
+    if (badge) { badge.style.color = '#ff4d4d'; badge.innerText = t.noCred; badge.dataset.state = 'nocred'; }
   }
 }
 
@@ -504,7 +504,8 @@ async function startRecording() {
   const llmKey = document.getElementById('llmKey').value.trim();
 
   if (!sttKey || !llmKey) {
-    alert("Please enter both Speech-to-Text and AI Engine API Keys.");
+    const t = typeof UI_TRANSLATIONS !== "undefined" ? (UI_TRANSLATIONS[document.getElementById("uiLanguage").value] || UI_TRANSLATIONS.en) : {errKeys: "Please enter both Speech-to-Text and AI Engine API Keys."};
+  alert(t.errKeys);
     return;
   }
 
@@ -889,4 +890,5 @@ function applyUILanguage() {
   updateTtsKeyField();
   updateLlmKeyField();
   populateVoices();
+  ['sttBadge', 'ttsBadge', 'llmBadge'].forEach(id => { const b = document.getElementById(id); if (b && b.dataset.state && t) { if (b.dataset.state === 'req') b.innerText = t.reqKey; else if (b.dataset.state === 'avail') b.innerText = t.credAvail; else if (b.dataset.state === 'nocred') b.innerText = t.noCred; else if (b.dataset.state === 'limit') b.innerText = t.credLeft.replace('{rem}', b.dataset.rem).replace('{limit}', b.dataset.limit); } });
 }
