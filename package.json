@@ -1,0 +1,40 @@
+{
+  "name": "voice-assistant",
+  "version": "1.0.0",
+  "description": "Desktop Voice Assistant",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder"
+  },
+  "keywords": ["voice", "assistant", "ai", "electron"],
+  "author": "Developer",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.voiceassistant.app",
+    "productName": "Voice Assistant",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "index.html",
+      "app.js"
+    ],
+    "mac": {
+      "target": ["dmg", "zip"],
+      "icon": "assets/icon.icns",
+      "category": "public.app-category.utilities"
+    },
+    "win": {
+      "target": ["nsis", "portable"]
+    },
+    "linux": {
+      "target": ["AppImage"]
+    }
+  }
+}
