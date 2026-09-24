@@ -657,6 +657,12 @@ function stopAndSendRecording() {
   if (!mediaRecorder || mediaRecorder.state === "inactive") return;
 
   mediaRecorder.stop();
+
+    if (mediaStream) {
+      mediaStream.getTracks().forEach(track => track.stop());
+      mediaStream = null;
+    }
+
   isRecording = false;
   updateStatus("statusProc", "statusSubProc", "status-processing");
 
