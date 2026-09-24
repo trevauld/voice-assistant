@@ -505,12 +505,29 @@ async function startRecording() {
 
   if (!sttKey || !llmKey) {
     const t = typeof UI_TRANSLATIONS !== "undefined" ? (UI_TRANSLATIONS[document.getElementById("uiLanguage").value] || UI_TRANSLATIONS.en) : {errKeys: "Please enter both Speech-to-Text and AI Engine API Keys."};
-  alert(t.errKeys);
+    alert(t.errKeys);
     return;
   }
 
   const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  mediaRecorder = new MediaRecorder(stream);
+
+  let options = {};
+  let selectedMime = '';
+  if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+    selectedMime = 'audio/webm;codecs=opus';
+  } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+    selectedMime = 'audio/webm';
+  } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+    selectedMime = 'audio/mp4';
+  } else if (MediaRecorder.isTypeSupported('audio/aac')) {
+    selectedMime = 'audio/aac';
+  }
+  if (selectedMime) {
+    options.mimeType = selectedMime;
+    window.currentRecordingMime = selectedMime;
+  }
+
+  mediaRecorder = new MediaRecorder(stream, options);
   audioChunks = [];
 
   mediaRecorder.ondataavailable = (event) => {
@@ -657,17 +674,15 @@ function stopAndSendRecording() {
   if (!mediaRecorder || mediaRecorder.state === "inactive") return;
 
   mediaRecorder.stop();
-
-    if (mediaStream) {
-      mediaStream.getTracks().forEach(track => track.stop());
-      mediaStream = null;
-    }
+  if (mediaRecorder.stream) {
+    mediaRecorder.stream.getTracks().forEach(track => track.stop());
+  }
 
   isRecording = false;
   updateStatus("statusProc", "statusSubProc", "status-processing");
 
   mediaRecorder.onstop = async () => {
-    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+    const audioBlob = new Blob(audioChunks, { type: window.currentRecordingMime || 'audio/webm' });
     const sttProvider = document.getElementById('sttProvider').value;
     const ttsProvider = document.getElementById('ttsProvider').value;
     
@@ -718,7 +733,10 @@ function stopAndSendRecording() {
       } else {
         const sttResponse = await fetch(`https://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&language=${selectedLang}`, {
           method: 'POST',
-          headers: { 'Authorization': `Token ${sttKey}`, 'Content-Type': 'audio/webm' },
+          headers: { 
+            'Authorization': `Token ${sttKey}`, 
+            'Content-Type': window.currentRecordingMime || 'audio/webm' 
+          },
           body: audioBlob,
           signal
         });
@@ -879,8 +897,20 @@ function applyUILanguage() {
   localStorage.setItem('ui_language', lang);
   const t = typeof UI_TRANSLATIONS !== 'undefined' ? (UI_TRANSLATIONS[lang] || UI_TRANSLATIONS.en) : null;
   if (!t) return;
-  const map = { 'lbl-ui-lang': t.uiLang, 'lbl-stt': t.stt, 'lbl-tts': t.tts, 'lbl-lang': t.lang, 'lbl-voice': t.voice, 'lbl-llm': t.llm, 'sum-inst': t.inst, 'sum-user': t.user, 'sum-ai': t.ai, 'btn-clear': t.clear, 'lbl-debug': t.debug,
-    'lbl-license': t.licenseText || 'MIT License' };
+  const map = { 
+    'lbl-ui-lang': t.uiLang, 
+    'lbl-stt': t.stt, 
+    'lbl-tts': t.tts, 
+    'lbl-lang': t.lang, 
+    'lbl-voice': t.voice, 
+    'lbl-llm': t.llm, 
+    'sum-inst': t.inst, 
+    'sum-user': t.user, 
+    'sum-ai': t.ai, 
+    'btn-clear': t.clear, 
+    'lbl-debug': t.debug,
+    'lbl-license': t.licenseText || 'MIT License'
+  };
   for (const [id, text] of Object.entries(map)) {
     const el = document.getElementById(id);
     if (el) el.innerText = text;
@@ -897,5 +927,13 @@ function applyUILanguage() {
   updateTtsKeyField();
   updateLlmKeyField();
   populateVoices();
-  ['sttBadge', 'ttsBadge', 'llmBadge'].forEach(id => { const b = document.getElementById(id); if (b && b.dataset.state && t) { if (b.dataset.state === 'req') b.innerText = t.reqKey; else if (b.dataset.state === 'avail') b.innerText = t.credAvail; else if (b.dataset.state === 'nocred') b.innerText = t.noCred; else if (b.dataset.state === 'limit') b.innerText = t.credLeft.replace('{rem}', b.dataset.rem).replace('{limit}', b.dataset.limit); } });
+  ['sttCredits', 'ttsCredits', 'llmCredits'].forEach(id => { 
+    const b = document.getElementById(id); 
+    if (b && b.dataset.state && t) { 
+      if (b.dataset.state === 'req') b.innerText = t.reqKey; 
+      else if (b.dataset.state === 'avail') b.innerText = t.credAvail; 
+      else if (b.dataset.state === 'nocred') b.innerText = t.noCred; 
+      else if (b.dataset.state === 'limit') b.innerText = t.credLeft.replace('{rem}', b.dataset.rem).replace('{limit}', b.dataset.limit); 
+    } 
+  });
 }
