@@ -879,7 +879,8 @@ function applyUILanguage() {
   localStorage.setItem('ui_language', lang);
   const t = typeof UI_TRANSLATIONS !== 'undefined' ? (UI_TRANSLATIONS[lang] || UI_TRANSLATIONS.en) : null;
   if (!t) return;
-  const map = { 'lbl-ui-lang': t.uiLang, 'lbl-stt': t.stt, 'lbl-tts': t.tts, 'lbl-lang': t.lang, 'lbl-voice': t.voice, 'lbl-llm': t.llm, 'sum-inst': t.inst, 'sum-user': t.user, 'sum-ai': t.ai, 'btn-clear': t.clear, 'lbl-debug': t.debug };
+  const map = { 'lbl-ui-lang': t.uiLang, 'lbl-stt': t.stt, 'lbl-tts': t.tts, 'lbl-lang': t.lang, 'lbl-voice': t.voice, 'lbl-llm': t.llm, 'sum-inst': t.inst, 'sum-user': t.user, 'sum-ai': t.ai, 'btn-clear': t.clear, 'lbl-debug': t.debug,
+    'lbl-license': t.licenseText || 'MIT License' };
   for (const [id, text] of Object.entries(map)) {
     const el = document.getElementById(id);
     if (el) el.innerText = text;
