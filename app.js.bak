@@ -164,8 +164,6 @@ document.addEventListener('DOMContentLoaded', () => {
   checkSttCredits();
   checkTtsCredits();
   checkLlmCredits();
-  populateUiLanguages();
-  applyUILanguage();
 
   // Global Keyboard Hotkeys
   document.addEventListener('keydown', async (event) => {
@@ -193,23 +191,20 @@ document.addEventListener('DOMContentLoaded', () => {
 function updateSttKeyField() {
   const provider = document.getElementById('sttProvider').value;
   document.getElementById('sttKey').value = getSavedKey('stt', provider);
-  const t = typeof UI_TRANSLATIONS !== 'undefined' ? (UI_TRANSLATIONS[document.getElementById('uiLanguage').value] || UI_TRANSLATIONS.en) : {pasteKey: 'Paste {provider} Key'};
-  document.getElementById('sttKey').placeholder = t.pasteKey.replace('{provider}', provider === 'deepgram' ? 'Deepgram' : 'ElevenLabs');
+  document.getElementById('sttKey').placeholder = `Paste ${provider === 'deepgram' ? 'Deepgram' : 'ElevenLabs'} Key`;
 }
 
 function updateTtsKeyField() {
   const provider = document.getElementById('ttsProvider').value;
   document.getElementById('ttsKey').value = getSavedKey('tts', provider);
-  const t = typeof UI_TRANSLATIONS !== 'undefined' ? (UI_TRANSLATIONS[document.getElementById('uiLanguage').value] || UI_TRANSLATIONS.en) : {pasteKey: 'Paste {provider} Key'};
-  document.getElementById('ttsKey').placeholder = t.pasteKey.replace('{provider}', provider === 'deepgram' ? 'Deepgram' : 'ElevenLabs');
+  document.getElementById('ttsKey').placeholder = `Paste ${provider === 'deepgram' ? 'Deepgram' : 'ElevenLabs'} Key`;
 }
 
 function updateLlmKeyField() {
   const provider = document.getElementById('llmProvider').value;
   const preset = PROVIDER_PRESETS[provider];
   document.getElementById('llmKey').value = localStorage.getItem(`llm_key_${provider}`) || '';
-  const t = typeof UI_TRANSLATIONS !== 'undefined' ? (UI_TRANSLATIONS[document.getElementById('uiLanguage').value] || UI_TRANSLATIONS.en) : {pasteKey: 'Paste {provider} Key'};
-  document.getElementById('llmKey').placeholder = t.pasteKey.replace('{provider}', preset.name);
+  document.getElementById('llmKey').placeholder = `Paste ${preset.name} Key`;
 }
 
 function onSttProviderChange() {
@@ -305,8 +300,7 @@ function populateVoices() {
   voices.forEach(v => {
     const opt = document.createElement('option');
     opt.value = v.id;
-    const t = typeof UI_TRANSLATIONS !== 'undefined' ? (UI_TRANSLATIONS[document.getElementById('uiLanguage').value] || UI_TRANSLATIONS.en) : {};
-    opt.innerText = v.name.replace('Basic', t.basic||'Basic').replace('Fast', t.fast||'Fast').replace('Expressive', t.expressive||'Expressive').replace('Slow', t.slow||'Slow').replace('Conversational', t.conversational||'Conversational').replace('Soft', t.soft||'Soft').replace('Confident', t.confident||'Confident').replace('Playful', t.playful||'Playful').replace('Warm', t.warm||'Warm');
+    opt.innerText = v.name;
     voiceSelect.appendChild(opt);
   });
 
@@ -340,30 +334,29 @@ async function checkTtsCredits() {
 }
 
 async function probeKeyCredits(provider, key, badge) {
-  const t = typeof UI_TRANSLATIONS !== 'undefined' ? (UI_TRANSLATIONS[document.getElementById('uiLanguage').value] || UI_TRANSLATIONS.en) : { reqKey: t.reqKey, credAvail: t.credAvail, noCred: t.noCred, credLeft: 'Credits: {rem} / {limit} chars left' };
   if (!key) {
     if (badge) {
       badge.style.color = '#888';
-      badge.innerText = t.reqKey;
+      badge.innerText = 'Enter an API key for the selected model';
     }
     return;
   }
 
   if (provider === 'elevenlabs') {
     try {
-      const res = await fetch('https://elevenlabs-proxy.keremk.workers.dev/v1/user/subscription', { headers: { 'xi-api-key': key } });
+      const res = await fetch('https://api.elevenlabs.io/v1/user/subscription', { headers: { 'xi-api-key': key } });
       if (res.ok) {
         const data = await res.json();
         const remaining = data.character_limit - data.character_count;
         if (badge) {
           badge.style.color = '#00ff66';
-          badge.innerText = t.credLeft.replace('{rem}', remaining.toLocaleString()).replace('{limit}', data.character_limit.toLocaleString());
+          badge.innerText = `Credits: ${remaining.toLocaleString()} /${data.character_limit.toLocaleString()} chars left`;
         }
       } else {
-        if (badge) { badge.style.color = '#ff4d4d'; badge.innerText = t.noCred; }
+        if (badge) { badge.style.color = '#ff4d4d'; badge.innerText = 'No credits available'; }
       }
     } catch (e) {
-      if (badge) { badge.style.color = '#ff4d4d'; badge.innerText = t.noCred; }
+      if (badge) { badge.style.color = '#ff4d4d'; badge.innerText = 'No credits available'; }
     }
   } else if (provider === 'deepgram') {
     try {
@@ -373,18 +366,17 @@ async function probeKeyCredits(provider, key, badge) {
       });
       
       if (res.status === 400 || res.ok) {
-        if (badge) { badge.style.color = '#00ff66'; badge.innerText = t.credAvail; }
+        if (badge) { badge.style.color = '#00ff66'; badge.innerText = 'Credits available'; }
       } else {
-        if (badge) { badge.style.color = '#ff4d4d'; badge.innerText = t.noCred; }
+        if (badge) { badge.style.color = '#ff4d4d'; badge.innerText = 'No credits available'; }
       }
     } catch (e) {
-      if (badge) { badge.style.color = '#ff4d4d'; badge.innerText = t.noCred; }
+      if (badge) { badge.style.color = '#ff4d4d'; badge.innerText = 'No credits available'; }
     }
   }
 }
 
 async function checkLlmCredits() {
-  const t = typeof UI_TRANSLATIONS !== 'undefined' ? (UI_TRANSLATIONS[document.getElementById('uiLanguage').value] || UI_TRANSLATIONS.en) : { reqKey: t.reqKey, credAvail: t.credAvail, noCred: t.noCred };
   const provider = document.getElementById('llmProvider').value;
   const llmKey = document.getElementById('llmKey').value.trim();
   const badge = document.getElementById('llmCredits');
@@ -392,7 +384,7 @@ async function checkLlmCredits() {
   if (!llmKey) {
     if (badge) {
       badge.style.color = '#888';
-      badge.innerText = t.reqKey;
+      badge.innerText = 'Enter an API key for the selected model';
     }
     return;
   }
@@ -411,12 +403,12 @@ async function checkLlmCredits() {
 
     const res = await fetch(url, { headers });
     if (res.ok) {
-      if (badge) { badge.style.color = '#00ff66'; badge.innerText = t.credAvail; }
+      if (badge) { badge.style.color = '#00ff66'; badge.innerText = 'Credits available'; }
     } else {
-      if (badge) { badge.style.color = '#ff4d4d'; badge.innerText = t.noCred; }
+      if (badge) { badge.style.color = '#ff4d4d'; badge.innerText = 'No credits available'; }
     }
   } catch (e) {
-    if (badge) { badge.style.color = '#ff4d4d'; badge.innerText = t.noCred; }
+    if (badge) { badge.style.color = '#ff4d4d'; badge.innerText = 'No credits available'; }
   }
 }
 
@@ -471,16 +463,16 @@ function clearMemory() {
   conversationHistory = [];
   
   const userBox = document.getElementById('userPromptBox');
-  if (userBox) { const t = UI_TRANSLATIONS[document.getElementById('uiLanguage').value] || UI_TRANSLATIONS.en; userBox.innerText = t.userPlaceholder; userBox.classList.add('placeholder'); }
+  if (userBox) { userBox.innerText = "Transcribed user speech will appear here..."; userBox.classList.add('placeholder'); }
 
   const assistantBox = document.getElementById('assistantResponseBox');
-  if (assistantBox) { const t = UI_TRANSLATIONS[document.getElementById('uiLanguage').value] || UI_TRANSLATIONS.en; assistantBox.innerText = t.aiPlaceholder; assistantBox.classList.add('placeholder'); }
+  if (assistantBox) { assistantBox.innerText = "Sanitized assistant response will appear here..."; assistantBox.classList.add('placeholder'); }
 
   const logs = document.getElementById('debugLogs');
   if (logs) logs.innerHTML = "Memory cleared.";
   const rawLog = document.getElementById('geminiRawLog');
   if (rawLog) rawLog.innerText = "Memory cleared.";
-  updateStatus("statusReady", "statusSubReady", "status-idle");
+  updateStatus("READY", "Press Spacebar or Click here to start recording", "status-idle");
 }
 
 function handleStatusCardClick() {
@@ -492,7 +484,7 @@ function handleStatusCardClick() {
     if (isRecording) stopAndSendRecording();
   } else if (card.classList.contains('status-speaking')) {
     stopAssistant();
-    updateStatus("statusReady", "statusSubReady", "status-idle");
+    updateStatus("READY", "Press Spacebar or Click here to start recording", "status-idle");
   }
 }
 
@@ -518,7 +510,7 @@ async function startRecording() {
 
   mediaRecorder.start();
   isRecording = true;
-  updateStatus("statusRec", "statusSubRec", "status-recording");
+  updateStatus("RECORDING...", "Speak now. Press ENTER or Click here to send.", "status-recording");
 }
 
 async function streamSelectedLLM(systemPrompt, history, signal) {
@@ -657,7 +649,7 @@ function stopAndSendRecording() {
 
   mediaRecorder.stop();
   isRecording = false;
-  updateStatus("statusProc", "statusSubProc", "status-processing");
+  updateStatus("PROCESSING...", "Transcribing and generating response...", "status-processing");
 
   mediaRecorder.onstop = async () => {
     const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
@@ -694,7 +686,7 @@ function stopAndSendRecording() {
         formData.append('model_id', 'scribe_v2');
         if (selectedLang) formData.append('language_code', selectedLang);
 
-        const sttResponse = await fetch('https://elevenlabs-proxy.keremk.workers.dev/v1/speech-to-text', {
+        const sttResponse = await fetch('https://api.elevenlabs.io/v1/speech-to-text', {
           method: 'POST',
           headers: { 'xi-api-key': sttKey },
           body: formData,
@@ -765,7 +757,7 @@ function stopAndSendRecording() {
         const voiceId = selectedVoiceTag.replace('xi:', '');
         if (!ttsKey) throw new Error("ElevenLabs API Key is required for TTS synthesis.");
 
-        const ttsResponse = await fetch(`https://elevenlabs-proxy.keremk.workers.dev/v1/text-to-speech/${voiceId}?output_format=mp3_22050_32`, {
+        const ttsResponse = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_22050_32`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -815,12 +807,12 @@ function stopAndSendRecording() {
       const audioUrl = URL.createObjectURL(audioBlobResponse);
       currentAudio = new Audio(audioUrl);
       
-      updateStatus("statusSpeak", "statusSubSpeak", "status-speaking");
+      updateStatus("AI SPEAKING...", "Listen to the response (Click or Press Space to Interrupt)", "status-speaking");
       currentAudio.play();
 
       currentAudio.onended = () => {
         currentAudio = null;
-        updateStatus("statusReady", "statusSubReady", "status-idle");
+        updateStatus("READY", "Press Spacebar or Click here to start recording", "status-idle");
       };
 
     } catch (error) {
@@ -832,61 +824,15 @@ function stopAndSendRecording() {
       if (rawLogEl) {
         rawLogEl.innerText = `[DEBUG INSPECTOR ERROR TRACE]\n${error.message}`;
       }
-      updateStatus("statusErr", "statusSubErr", "status-recording");
-      setTimeout(() => updateStatus("statusReady", "statusSubReady", "status-idle"), 3000);
+      updateStatus("ERROR", "API Error. Check Inspector.", "status-recording");
+      setTimeout(() => updateStatus("READY", "Press Spacebar or Click here to start recording", "status-idle"), 3000);
     }
   };
 }
 
-function updateStatus(titleKey, subtitleKey, className) {
-  const lang = document.getElementById('uiLanguage') ? document.getElementById('uiLanguage').value : 'en';
-  const t = typeof UI_TRANSLATIONS !== 'undefined' ? (UI_TRANSLATIONS[lang] || UI_TRANSLATIONS.en) : {};
+function updateStatus(title, subtitle, className) {
   const card = document.getElementById('statusCard');
-  if(card) card.className = `status-card ${className}`;
-  const st = document.getElementById('statusText');
-  if(st) st.innerText = t[titleKey] || titleKey;
-  const sst = document.getElementById('subStatusText');
-  if(sst) sst.innerText = t[subtitleKey] || subtitleKey;
-}
-
-function populateUiLanguages() {
-  const uiLangSelect = document.getElementById('uiLanguage');
-  if(!uiLangSelect) return;
-  uiLangSelect.innerHTML = '';
-  SUPPORTED_LANGUAGES.elevenlabs.forEach(l => {
-    const opt = document.createElement('option');
-    opt.value = l.code;
-    opt.innerText = l.name;
-    uiLangSelect.appendChild(opt);
-  });
-  const savedUiLang = localStorage.getItem('ui_language') || 'en';
-  if (Array.from(uiLangSelect.options).some(o => o.value === savedUiLang)) {
-    uiLangSelect.value = savedUiLang;
-  } else {
-    uiLangSelect.value = 'en';
-  }
-}
-
-function applyUILanguage() {
-  const lang = document.getElementById('uiLanguage').value;
-  localStorage.setItem('ui_language', lang);
-  const t = typeof UI_TRANSLATIONS !== 'undefined' ? (UI_TRANSLATIONS[lang] || UI_TRANSLATIONS.en) : null;
-  if (!t) return;
-  const map = { 'lbl-ui-lang': t.uiLang, 'lbl-stt': t.stt, 'lbl-tts': t.tts, 'lbl-lang': t.lang, 'lbl-voice': t.voice, 'lbl-llm': t.llm, 'sum-inst': t.inst, 'sum-user': t.user, 'sum-ai': t.ai, 'btn-clear': t.clear, 'lbl-debug': t.debug };
-  for (const [id, text] of Object.entries(map)) {
-    const el = document.getElementById(id);
-    if (el) el.innerText = text;
-  }
-  const card = document.getElementById('statusCard');
-  if (card && card.classList.contains('status-idle')) updateStatus("statusReady", "statusSubReady", "status-idle");
-  const userBox = document.getElementById('userPromptBox');
-  if (userBox && userBox.classList.contains('placeholder')) userBox.innerText = t.userPlaceholder;
-  const assistantBox = document.getElementById('assistantResponseBox');
-  if (assistantBox && assistantBox.classList.contains('placeholder')) assistantBox.innerText = t.aiPlaceholder;
-  const ctrls = document.getElementById('lbl-ctrls');
-  if (ctrls && t.ctrls) ctrls.innerHTML = t.ctrls;
-  updateSttKeyField();
-  updateTtsKeyField();
-  updateLlmKeyField();
-  populateVoices();
+  card.className = `status-card ${className}`;
+  document.getElementById('statusText').innerText = title;
+  document.getElementById('subStatusText').innerText = subtitle;
 }

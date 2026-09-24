@@ -282,14 +282,14 @@
       </div>
     </div>
 
-    <div class="controls-hint">
+    <div id="lbl-ctrls" class="controls-hint">
       <strong>[ SPACEBAR ]</strong> Record/Pause/Interrupt | <strong>[ ENTER ]</strong> Send | <strong>[ ESC ]</strong> Clear Memory
     </div>
 
     <!-- Debug Inspector Toggle & Panel -->
     <div>
-      <label id="lbl-debug" style="font-size: 0.85rem; display: flex; align-items: center; gap: 8px; cursor: pointer;">
-        <input type="checkbox" id="debugToggle" onchange="toggleDebug()" /> Enable Debug Inspector
+      <label style="font-size: 0.85rem; display: flex; align-items: center; gap: 8px; cursor: pointer;">
+        <input type="checkbox" id="debugToggle" onchange="toggleDebug()" /> <span id="lbl-debug">Enable Debug Inspector</span>
       </label>
     </div>
 
