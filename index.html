@@ -173,10 +173,15 @@
 </head>
 <body>
   <div class="container">
+    <!-- UI Language Selector -->
+    <div style="display: flex; justify-content: flex-end; margin-bottom: -5px;">
+      <label id="lbl-ui-lang" style="font-size: 0.8rem; margin-right: 8px; align-self: center;">UI Language</label>
+      <select id="uiLanguage" onchange="applyUILanguage()" style="width: auto; padding: 4px 24px 4px 8px; font-size: 0.8rem;"></select>
+    </div>
     
     <!-- 1) Speech-to-Text Provider (Default: Deepgram) -->
     <div>
-      <label style="font-size: 0.9rem; font-weight: 600;">Speech-to-Text Provider</label>
+      <label id="lbl-stt" style="font-size: 0.9rem; font-weight: 600;">Speech-to-Text Provider</label>
       <div class="grid-2" style="margin-top: 6px;">
         <div>
           <select id="sttProvider" onchange="onSttProviderChange()">
@@ -193,7 +198,7 @@
 
     <!-- 2) Text-to-Speech Provider (Default: Deepgram) -->
     <div>
-      <label style="font-size: 0.9rem; font-weight: 600;">Text-to-Speech Provider</label>
+      <label id="lbl-tts" style="font-size: 0.9rem; font-weight: 600;">Text-to-Speech Provider</label>
       <div class="grid-2" style="margin-top: 6px;">
         <div>
           <select id="ttsProvider" onchange="onTtsEngineChange()">
@@ -211,18 +216,18 @@
     <!-- Assistant Language & Voice Persona Dropdowns -->
     <div class="grid-2">
       <div>
-        <label style="font-size: 0.85rem;">Assistant Language</label>
+        <label id="lbl-lang" style="font-size: 0.85rem;">Assistant Language</label>
         <select id="selectedLanguage" onchange="onLanguageChange()"></select>
       </div>
       <div>
-        <label style="font-size: 0.85rem;">Assistant Voice Persona</label>
+        <label id="lbl-voice" style="font-size: 0.85rem;">Assistant Voice Persona</label>
         <select id="ttsVoice" onchange="saveSettings()"></select>
       </div>
     </div>
 
     <!-- 3) AI Engine (LLM) Provider (Default: Mistral AI) -->
     <div>
-      <label style="font-size: 0.9rem; font-weight: 600;">AI Engine (LLM) Provider</label>
+      <label id="lbl-llm" style="font-size: 0.9rem; font-weight: 600;">AI Engine (LLM) Provider</label>
       <div class="grid-2" style="margin-top: 6px;">
         <div>
           <select id="llmProvider" onchange="onLlmProviderChange()">
@@ -240,19 +245,19 @@
 
     <!-- Collapsible Voice Assistant Instructions -->
     <details open>
-      <summary>Voice Assistant Instructions</summary>
+      <summary id="sum-inst">Voice Assistant Instructions</summary>
       <textarea id="systemPrompt" rows="3" onchange="saveSettings()"></textarea>
     </details>
 
     <!-- Collapsible User Prompt Box -->
     <details open>
-      <summary>User Prompt</summary>
+      <summary id="sum-user">User Prompt</summary>
       <div id="userPromptBox" class="display-box placeholder">Transcribed user speech will appear here...</div>
     </details>
 
     <!-- Collapsible Voice Assistant Response Box -->
     <details open>
-      <summary>Voice Assistant Response</summary>
+      <summary id="sum-ai">Voice Assistant Response</summary>
       <div id="assistantResponseBox" class="display-box placeholder">Sanitized assistant response will appear here...</div>
     </details>
 
@@ -273,7 +278,7 @@
       </div>
 
       <div class="btn-group">
-        <button class="action-btn" onclick="event.stopPropagation(); clearMemory()">Clear Memory (ESC)</button>
+        <button class="action-btn" id="btn-clear" onclick="event.stopPropagation(); clearMemory()">Clear Memory (ESC)</button>
       </div>
     </div>
 
@@ -283,7 +288,7 @@
 
     <!-- Debug Inspector Toggle & Panel -->
     <div>
-      <label style="font-size: 0.85rem; display: flex; align-items: center; gap: 8px; cursor: pointer;">
+      <label id="lbl-debug" style="font-size: 0.85rem; display: flex; align-items: center; gap: 8px; cursor: pointer;">
         <input type="checkbox" id="debugToggle" onchange="toggleDebug()" /> Enable Debug Inspector
       </label>
     </div>
@@ -300,6 +305,7 @@
 
   </div>
 
+  <script src="translations.js"></script>
   <script src="app.js"></script>
   <script>
     if ("serviceWorker" in navigator) {

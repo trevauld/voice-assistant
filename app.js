@@ -164,6 +164,8 @@ document.addEventListener('DOMContentLoaded', () => {
   checkSttCredits();
   checkTtsCredits();
   checkLlmCredits();
+  populateUiLanguages();
+  applyUILanguage();
 
   // Global Keyboard Hotkeys
   document.addEventListener('keydown', async (event) => {
@@ -463,16 +465,16 @@ function clearMemory() {
   conversationHistory = [];
   
   const userBox = document.getElementById('userPromptBox');
-  if (userBox) { userBox.innerText = "Transcribed user speech will appear here..."; userBox.classList.add('placeholder'); }
+  if (userBox) { const t = UI_TRANSLATIONS[document.getElementById('uiLanguage').value] || UI_TRANSLATIONS.en; userBox.innerText = t.userPlaceholder; userBox.classList.add('placeholder'); }
 
   const assistantBox = document.getElementById('assistantResponseBox');
-  if (assistantBox) { assistantBox.innerText = "Sanitized assistant response will appear here..."; assistantBox.classList.add('placeholder'); }
+  if (assistantBox) { const t = UI_TRANSLATIONS[document.getElementById('uiLanguage').value] || UI_TRANSLATIONS.en; assistantBox.innerText = t.aiPlaceholder; assistantBox.classList.add('placeholder'); }
 
   const logs = document.getElementById('debugLogs');
   if (logs) logs.innerHTML = "Memory cleared.";
   const rawLog = document.getElementById('geminiRawLog');
   if (rawLog) rawLog.innerText = "Memory cleared.";
-  updateStatus("READY", "Press Spacebar or Click here to start recording", "status-idle");
+  updateStatus("statusReady", "statusSubReady", "status-idle");
 }
 
 function handleStatusCardClick() {
@@ -484,7 +486,7 @@ function handleStatusCardClick() {
     if (isRecording) stopAndSendRecording();
   } else if (card.classList.contains('status-speaking')) {
     stopAssistant();
-    updateStatus("READY", "Press Spacebar or Click here to start recording", "status-idle");
+    updateStatus("statusReady", "statusSubReady", "status-idle");
   }
 }
 
@@ -510,7 +512,7 @@ async function startRecording() {
 
   mediaRecorder.start();
   isRecording = true;
-  updateStatus("RECORDING...", "Speak now. Press ENTER or Click here to send.", "status-recording");
+  updateStatus("statusRec", "statusSubRec", "status-recording");
 }
 
 async function streamSelectedLLM(systemPrompt, history, signal) {
@@ -649,7 +651,7 @@ function stopAndSendRecording() {
 
   mediaRecorder.stop();
   isRecording = false;
-  updateStatus("PROCESSING...", "Transcribing and generating response...", "status-processing");
+  updateStatus("statusProc", "statusSubProc", "status-processing");
 
   mediaRecorder.onstop = async () => {
     const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
@@ -807,12 +809,12 @@ function stopAndSendRecording() {
       const audioUrl = URL.createObjectURL(audioBlobResponse);
       currentAudio = new Audio(audioUrl);
       
-      updateStatus("AI SPEAKING...", "Listen to the response (Click or Press Space to Interrupt)", "status-speaking");
+      updateStatus("statusSpeak", "statusSubSpeak", "status-speaking");
       currentAudio.play();
 
       currentAudio.onended = () => {
         currentAudio = null;
-        updateStatus("READY", "Press Spacebar or Click here to start recording", "status-idle");
+        updateStatus("statusReady", "statusSubReady", "status-idle");
       };
 
     } catch (error) {
@@ -824,15 +826,55 @@ function stopAndSendRecording() {
       if (rawLogEl) {
         rawLogEl.innerText = `[DEBUG INSPECTOR ERROR TRACE]\n${error.message}`;
       }
-      updateStatus("ERROR", "API Error. Check Inspector.", "status-recording");
-      setTimeout(() => updateStatus("READY", "Press Spacebar or Click here to start recording", "status-idle"), 3000);
+      updateStatus("statusErr", "statusSubErr", "status-recording");
+      setTimeout(() => updateStatus("statusReady", "statusSubReady", "status-idle"), 3000);
     }
   };
 }
 
-function updateStatus(title, subtitle, className) {
+function updateStatus(titleKey, subtitleKey, className) {
+  const lang = document.getElementById('uiLanguage') ? document.getElementById('uiLanguage').value : 'en';
+  const t = typeof UI_TRANSLATIONS !== 'undefined' ? (UI_TRANSLATIONS[lang] || UI_TRANSLATIONS.en) : {};
   const card = document.getElementById('statusCard');
-  card.className = `status-card ${className}`;
-  document.getElementById('statusText').innerText = title;
-  document.getElementById('subStatusText').innerText = subtitle;
+  if(card) card.className = `status-card ${className}`;
+  const st = document.getElementById('statusText');
+  if(st) st.innerText = t[titleKey] || titleKey;
+  const sst = document.getElementById('subStatusText');
+  if(sst) sst.innerText = t[subtitleKey] || subtitleKey;
+}
+
+function populateUiLanguages() {
+  const uiLangSelect = document.getElementById('uiLanguage');
+  if(!uiLangSelect) return;
+  uiLangSelect.innerHTML = '';
+  SUPPORTED_LANGUAGES.elevenlabs.forEach(l => {
+    const opt = document.createElement('option');
+    opt.value = l.code;
+    opt.innerText = l.name;
+    uiLangSelect.appendChild(opt);
+  });
+  const savedUiLang = localStorage.getItem('ui_language') || 'en';
+  if (Array.from(uiLangSelect.options).some(o => o.value === savedUiLang)) {
+    uiLangSelect.value = savedUiLang;
+  } else {
+    uiLangSelect.value = 'en';
+  }
+}
+
+function applyUILanguage() {
+  const lang = document.getElementById('uiLanguage').value;
+  localStorage.setItem('ui_language', lang);
+  const t = typeof UI_TRANSLATIONS !== 'undefined' ? (UI_TRANSLATIONS[lang] || UI_TRANSLATIONS.en) : null;
+  if (!t) return;
+  const map = { 'lbl-ui-lang': t.uiLang, 'lbl-stt': t.stt, 'lbl-tts': t.tts, 'lbl-lang': t.lang, 'lbl-voice': t.voice, 'lbl-llm': t.llm, 'sum-inst': t.inst, 'sum-user': t.user, 'sum-ai': t.ai, 'btn-clear': t.clear, 'lbl-debug': t.debug };
+  for (const [id, text] of Object.entries(map)) {
+    const el = document.getElementById(id);
+    if (el) el.innerText = text;
+  }
+  const card = document.getElementById('statusCard');
+  if (card && card.classList.contains('status-idle')) updateStatus("statusReady", "statusSubReady", "status-idle");
+  const userBox = document.getElementById('userPromptBox');
+  if (userBox && userBox.classList.contains('placeholder')) userBox.innerText = t.userPlaceholder;
+  const assistantBox = document.getElementById('assistantResponseBox');
+  if (assistantBox && assistantBox.classList.contains('placeholder')) assistantBox.innerText = t.aiPlaceholder;
 }
