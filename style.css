@@ -1,0 +1,58 @@
+:root {
+  --bg: #121214;
+  --card-bg: #1e1e24;
+  --border: #2e2e38;
+  --text: #e1e1e6;
+  --subtext: #a0a0b0;
+  --accent: #6366f1;
+  --idle: #3b82f6;
+  --rec: #ef4444;
+  --proc: #f59e0b;
+  --speak: #10b981;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+body { background: var(--bg); color: var(--text); display: flex; justify-content: center; padding: 20px; min-height: 100vh; }
+.container { width: 100%; max-width: 700px; display: flex; flex-direction: column; gap: 15px; }
+
+.config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 600px) { .config-grid { grid-template-columns: 1fr; } }
+
+.card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
+.card.full-width { grid-column: 1 / -1; }
+.card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+
+.badge { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: #2a2a35; color: var(--subtext); }
+
+.field-row { display: flex; gap: 8px; align-items: center; }
+select, input[type="password"], textarea { background: #141418; border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 8px; font-size: 0.85rem; width: 100%; }
+select:focus, input:focus, textarea:focus { outline: none; border-color: var(--accent); }
+
+.status-card { background: var(--card-bg); border: 2px solid var(--border); border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.2s ease; user-select: none; }
+.status-card:hover { border-color: var(--accent); }
+
+.status-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 4px; }
+.status-subtitle { font-size: 0.85rem; color: var(--subtext); }
+
+.status-idle { border-color: var(--idle); }
+.status-idle .status-title { color: var(--idle); }
+.status-recording { border-color: var(--rec); animation: pulse 1.5s infinite; }
+.status-recording .status-title { color: var(--rec); }
+.status-processing { border-color: var(--proc); }
+.status-processing .status-title { color: var(--proc); }
+.status-speaking { border-color: var(--speak); }
+.status-speaking .status-title { color: var(--speak); }
+
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+
+details { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px; font-size: 0.85rem; }
+summary { font-weight: 600; cursor: pointer; color: var(--subtext); }
+.prompt-box { background: #141418; border: 1px solid var(--border); border-radius: 6px; padding: 10px; margin-top: 8px; min-height: 40px; color: var(--text); }
+.prompt-box.placeholder { color: #555; font-style: italic; }
+
+.controls-bar { display: flex; justify-content: space-between; align-items: center; margin-top: 5px; }
+.action-btn { background: #2d2d38; color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; font-size: 0.8rem; cursor: pointer; }
+.action-btn:hover { background: var(--accent); border-color: var(--accent); }
+
+.controls-hint { font-size: 0.75rem; color: var(--subtext); text-align: center; margin-top: 5px; }
+.log-box { background: #000; color: #0f0; font-family: monospace; font-size: 0.75rem; padding: 8px; border-radius: 6px; overflow-x: auto; margin-top: 6px; }
