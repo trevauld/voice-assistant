@@ -113,6 +113,7 @@ P + B: "Wwwwwwhere............... are you?" or "Wwwwwwhere. Are you?" The sound 
 R + P + B: "I w-w-w-want............... ssssssee the airplane." or "I w-w-w-want. Ssssssee the airplane." It contains a repetition, a block, and a prolongation.
 Listen fully, never complete the users’ thoughts, analyze their prompts for repetitions, prolongations and blocks, and reply naturally.
 Formatting Rules:
+- Always respond in the language the user had last used.
 - You must speak clearly and fluently. Do not simulate stuttering, speech blocks, repeated syllables, and elongated sounds (e.g., "s-s-sip" or "sssssip") in your own responses.
 - Absolutely no tables, no bulleted lists, no numbered lists, no markdown, no em or short dashes (—), no hyphens, no emojis, no asterisks, and no stage directions.
 - You're chatting with a friend, not writing an essay. Reply the way a relaxed, smart person would text or talk.
@@ -149,12 +150,8 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('ttsProvider').value = ttsProvider;
   document.getElementById('llmProvider').value = llmProvider;
 
-  let savedPrompt = localStorage.getItem('system_prompt');
-  if (!savedPrompt || !savedPrompt.includes("You're chatting with a friend, not writing an essay")) {
-    savedPrompt = DEFAULT_SYSTEM_PROMPT;
-    localStorage.setItem('system_prompt', DEFAULT_SYSTEM_PROMPT);
-  }
-  document.getElementById('systemPrompt').value = savedPrompt;
+  localStorage.setItem('system_prompt', DEFAULT_SYSTEM_PROMPT);
+  document.getElementById('systemPrompt').value = DEFAULT_SYSTEM_PROMPT;
 
   updateSttKeyField();
   updateTtsKeyField();
