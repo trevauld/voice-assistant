@@ -130,6 +130,7 @@ function getSavedKey(type, provider) {
   if (stored) return stored;
   if (provider === 'deepgram') return localStorage.getItem('dg_key') || '';
   if (provider === 'elevenlabs') return localStorage.getItem('xi_key') || '';
+  if (provider === 'assemblyai') return localStorage.getItem('aai_key') || '';
   return '';
 }
 
@@ -138,6 +139,7 @@ function setSavedKey(type, provider, val) {
   localStorage.setItem(`${type}_key_${provider}`, cleanVal);
   if (provider === 'deepgram') localStorage.setItem('dg_key', cleanVal);
   if (provider === 'elevenlabs') localStorage.setItem('xi_key', cleanVal);
+  if (provider === 'assemblyai') localStorage.setItem('aai_key', cleanVal);
 }
 
 // Master Safe Startup Sequence
@@ -356,6 +358,19 @@ async function probeKeyCredits(provider, key, badge) {
           badge.style.color = '#00ff66';
           badge.innerText = t.credLeft.replace('{rem}', remaining.toLocaleString()).replace('{limit}', data.character_limit.toLocaleString()); badge.dataset.state = 'limit'; badge.dataset.rem = remaining.toLocaleString(); badge.dataset.limit = data.character_limit.toLocaleString();
         }
+      } else {
+        if (badge) { badge.style.color = '#ff4d4d'; badge.innerText = t.noCred; badge.dataset.state = 'nocred'; }
+      }
+    } catch (e) {
+      if (badge) { badge.style.color = '#ff4d4d'; badge.innerText = t.noCred; badge.dataset.state = 'nocred'; }
+    }
+  } else if (provider === 'assemblyai') {
+    try {
+      const res = await fetch('https://api.assemblyai.com/v2/user', {
+        headers: { 'Authorization': key }
+      });
+      if (res.ok) {
+        if (badge) { badge.style.color = '#00ff66'; badge.innerText = t.credAvail; badge.dataset.state = 'avail'; }
       } else {
         if (badge) { badge.style.color = '#ff4d4d'; badge.innerText = t.noCred; badge.dataset.state = 'nocred'; }
       }
