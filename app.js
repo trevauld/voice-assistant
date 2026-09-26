@@ -906,7 +906,7 @@ function applyUILanguage() {
     'sum-ai': t.ai, 
     'btn-clear': t.clear, 
     'lbl-debug': t.debug,
-    'lbl-license': t.licenseText || 'MIT License'
+    'lbl-license': t.licenseText || 'AGPLv3 License'
   };
   for (const [id, text] of Object.entries(map)) {
     const el = document.getElementById(id);
