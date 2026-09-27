@@ -3,7 +3,6 @@
 
 const ALLOWED_ORIGINS = [
   'https://push-to-chat.keremk.workers.dev',
-  'https://trevauld.github.io',
 ];
 
 // Only the endpoints the app actually uses
