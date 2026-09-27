@@ -275,35 +275,55 @@ function onLlmKeyChange() {
   checkLlmCredits();
 }
 
+function providerSupports(provider, lang) {
+  return (SUPPORTED_LANGUAGES[provider] || SUPPORTED_LANGUAGES.deepgram).some(l => l.code === lang);
+}
+
 function onLanguageChange() {
+  const lang = document.getElementById('selectedLanguage').value;
+  localStorage.setItem('selected_language', lang);
+
+  // Picking an ElevenLabs-only language switches any Deepgram side over to ElevenLabs
+  // (set both selects before running either handler, so the language isn't reset in between)
+  const stt = document.getElementById('sttProvider');
+  const tts = document.getElementById('ttsProvider');
+  const switchStt = !providerSupports(stt.value, lang);
+  const switchTts = !providerSupports(tts.value, lang);
+  if (switchStt) stt.value = 'elevenlabs';
+  if (switchTts) tts.value = 'elevenlabs';
+  if (switchStt) onSttProviderChange();
+  if (switchTts) onTtsEngineChange();
+
   populateVoices();
   saveSettings();
 }
 
 function populateLanguages() {
-  const ttsP = document.getElementById('ttsProvider').value;
-  const sttP = document.getElementById('sttProvider').value;
   const langSelect = document.getElementById('selectedLanguage');
   const savedLang = localStorage.getItem('selected_language') || 'en';
 
   langSelect.innerHTML = '';
 
-  // Only offer languages both the STT provider can transcribe and the TTS provider can speak
-  const sttCodes = (SUPPORTED_LANGUAGES[sttP] || SUPPORTED_LANGUAGES.deepgram).map(l => l.code);
-  const languages = (SUPPORTED_LANGUAGES[ttsP] || SUPPORTED_LANGUAGES.deepgram).filter(l => sttCodes.includes(l.code));
-  
-  languages.forEach(l => {
+  // Always list every language; ones Deepgram can't handle are tagged and listed after a separator
+  const addOption = (value, text, disabled = false) => {
     const opt = document.createElement('option');
-    opt.value = l.code;
-    opt.innerText = l.name;
+    opt.value = value;
+    opt.innerText = text;
+    opt.disabled = disabled;
     langSelect.appendChild(opt);
-  });
+  };
+  const [common, elevenLabsOnly] = [true, false].map(inDeepgram =>
+    SUPPORTED_LANGUAGES.elevenlabs.filter(l => providerSupports('deepgram', l.code) === inDeepgram));
+  common.forEach(l => addOption(l.code, l.name));
+  addOption('', '──────────', true);
+  elevenLabsOnly.forEach(l => addOption(l.code, `${l.name} · ElevenLabs`));
 
-  if (Array.from(langSelect.options).some(o => o.value === savedLang)) {
-    langSelect.value = savedLang;
-  } else {
-    langSelect.value = 'en';
-  }
+  // Switching a provider to Deepgram while an ElevenLabs-only language is selected falls back to English
+  const sttP = document.getElementById('sttProvider').value;
+  const ttsP = document.getElementById('ttsProvider').value;
+  const lang = providerSupports(sttP, savedLang) && providerSupports(ttsP, savedLang) ? savedLang : 'en';
+  langSelect.value = lang;
+  localStorage.setItem('selected_language', lang);
 
   populateVoices();
 }

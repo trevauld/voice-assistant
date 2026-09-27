@@ -228,6 +228,16 @@
       <select id="uiLanguage" style="width: auto; padding: 4px 24px 4px 8px; font-size: 0.8rem;"></select>
     </div>
     
+    <!-- Chat Language (drives which providers can be used) -->
+    <div>
+      <label id="lbl-lang" style="font-size: 0.9rem; font-weight: 600;">Chat Language</label>
+      <div class="grid-2" style="margin-top: 6px;">
+        <div>
+          <select id="selectedLanguage"></select>
+        </div>
+      </div>
+    </div>
+
     <!-- 1) Speech-to-Text Provider (Default: Deepgram) -->
     <div>
       <label id="lbl-stt" style="font-size: 0.9rem; font-weight: 600;">Speech-to-Text Provider</label>
@@ -260,17 +270,11 @@
           <span id="ttsCredits" class="credit-badge"></span>
         </div>
       </div>
-    </div>
-
-    <!-- Chat Language & Voice Persona Dropdowns -->
-    <div class="grid-2">
-      <div>
-        <label id="lbl-lang" style="font-size: 0.85rem;">Chat Language</label>
-        <select id="selectedLanguage"></select>
-      </div>
-      <div>
-        <label id="lbl-voice" style="font-size: 0.85rem;">Assistant Voice Persona</label>
-        <select id="ttsVoice"></select>
+      <div class="grid-2" style="margin-top: 8px;">
+        <div>
+          <label id="lbl-voice" style="font-size: 0.85rem;">Assistant Voice Persona</label>
+          <select id="ttsVoice"></select>
+        </div>
       </div>
     </div>
 
