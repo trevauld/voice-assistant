@@ -1,7 +1,6 @@
-const CACHE_NAME = 'voice-assistant-cache-v4';
+const CACHE_NAME = 'voice-assistant-cache-v5';
 const urlsToCache = [
   './',
-  './index.html',
   './app.js',
   './translations.js',
   './manifest.json'
@@ -41,6 +40,11 @@ self.addEventListener('fetch', event => {
     // so a fresh index.html is never paired with a stale app.js after a deploy
     fetch(event.request.url, { cache: 'no-cache' })
       .then(response => {
+        // Safari refuses page loads answered with a redirected response (e.g. /index.html -> /),
+        // so hand back a plain copy of the final response instead
+        if (response.redirected) {
+          response = new Response(response.body, { status: response.status, statusText: response.statusText, headers: response.headers });
+        }
         // If network fetch succeeds, update the local cache silently
         const responseClone = response.clone();
         caches.open(CACHE_NAME).then(cache => {
