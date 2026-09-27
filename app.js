@@ -28,7 +28,7 @@ const PROVIDER_PRESETS = {
   }
 };
 
-// Full 32-Language ElevenLabs Catalog + Deepgram Core Languages
+// Languages each provider supports (Deepgram: same 5 for STT and TTS; ElevenLabs: 32 for both)
 const SUPPORTED_LANGUAGES = {
   deepgram: [
     { code: 'en', name: 'English' },
@@ -282,13 +282,15 @@ function onLanguageChange() {
 
 function populateLanguages() {
   const ttsP = document.getElementById('ttsProvider').value;
+  const sttP = document.getElementById('sttProvider').value;
   const langSelect = document.getElementById('selectedLanguage');
   const savedLang = localStorage.getItem('selected_language') || 'en';
 
   langSelect.innerHTML = '';
 
-  // Only offer languages the selected TTS provider can speak
-  const languages = SUPPORTED_LANGUAGES[ttsP] || SUPPORTED_LANGUAGES.deepgram;
+  // Only offer languages both the STT provider can transcribe and the TTS provider can speak
+  const sttCodes = (SUPPORTED_LANGUAGES[sttP] || SUPPORTED_LANGUAGES.deepgram).map(l => l.code);
+  const languages = (SUPPORTED_LANGUAGES[ttsP] || SUPPORTED_LANGUAGES.deepgram).filter(l => sttCodes.includes(l.code));
   
   languages.forEach(l => {
     const opt = document.createElement('option');
