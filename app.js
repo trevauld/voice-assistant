@@ -258,21 +258,21 @@ function onSttKeyChange() {
   const provider = document.getElementById('sttProvider').value;
   const val = document.getElementById('sttKey').value;
   setSavedKey('stt', provider, val);
-  checkSttCredits();
+  scheduleKeyCheck('stt', checkSttCredits);
 }
 
 function onTtsKeyChange() {
   const provider = document.getElementById('ttsProvider').value;
   const val = document.getElementById('ttsKey').value;
   setSavedKey('tts', provider, val);
-  checkTtsCredits();
+  scheduleKeyCheck('tts', checkTtsCredits);
 }
 
 function onLlmKeyChange() {
   const provider = document.getElementById('llmProvider').value;
   const val = document.getElementById('llmKey').value;
   localStorage.setItem(`llm_key_${provider}`, val.trim());
-  checkLlmCredits();
+  scheduleKeyCheck('llm', checkLlmCredits);
 }
 
 function providerSupports(provider, lang) {
@@ -393,74 +393,76 @@ async function elevenLabsFetch(path, init) {
 async function checkSttCredits() {
   const provider = document.getElementById('sttProvider').value;
   const key = document.getElementById('sttKey').value.trim();
-  const badge = document.getElementById('sttCredits');
-  probeKeyCredits(provider, key, badge);
+  await probeKeyCredits(provider, key, document.getElementById('sttCredits'));
 }
 
 async function checkTtsCredits() {
   const provider = document.getElementById('ttsProvider').value;
   const key = document.getElementById('ttsKey').value.trim();
-  const badge = document.getElementById('ttsCredits');
-  probeKeyCredits(provider, key, badge);
+  await probeKeyCredits(provider, key, document.getElementById('ttsCredits'));
+}
+
+// Wait for typing/pasting to settle before checking a key, so partial keys aren't probed
+const keyCheckTimers = {};
+function scheduleKeyCheck(name, check) {
+  clearTimeout(keyCheckTimers[name]);
+  keyCheckTimers[name] = setTimeout(check, 400);
+}
+
+// Checks can finish out of order; only the most recent one for a badge may update it
+function startBadgeCheck(badge) {
+  badge.dataset.check = String(Number(badge.dataset.check || 0) + 1);
+  return badge.dataset.check;
+}
+
+function setBadge(badge, checkId, state, rem, limit) {
+  if (!badge || badge.dataset.check !== checkId) return;
+  badge.dataset.state = state;
+  if (rem !== undefined) { badge.dataset.rem = rem; badge.dataset.limit = limit; }
+  renderBadge(badge);
+}
+
+function renderBadge(badge) {
+  const t = UI_TRANSLATIONS[document.getElementById('uiLanguage').value] || UI_TRANSLATIONS.en;
+  const state = badge.dataset.state;
+  if (!state) return;
+  badge.style.color = state === 'req' ? '#888' : state === 'nocred' ? '#ff4d4d' : '#00ff66';
+  badge.innerText = state === 'req' ? t.reqKey
+    : state === 'avail' ? t.credAvail
+    : state === 'nocred' ? t.noCred
+    : t.credLeft.replace('{rem}', badge.dataset.rem).replace('{limit}', badge.dataset.limit);
 }
 
 async function probeKeyCredits(provider, key, badge) {
-  const t = typeof UI_TRANSLATIONS !== 'undefined' ? (UI_TRANSLATIONS[document.getElementById('uiLanguage').value] || UI_TRANSLATIONS.en) : { reqKey: t.reqKey, credAvail: t.credAvail, noCred: t.noCred, credLeft: 'Credits: {rem} / {limit} chars left' };
-  if (!key) {
-    if (badge) {
-      badge.style.color = '#888';
-      badge.innerText = t.reqKey; badge.dataset.state = 'req';
-    }
-    return;
-  }
+  const checkId = startBadgeCheck(badge);
+  if (!key) return setBadge(badge, checkId, 'req');
 
-  if (provider === 'elevenlabs') {
-    try {
+  try {
+    if (provider === 'elevenlabs') {
       const res = await elevenLabsFetch('/v1/user/subscription', { headers: { 'xi-api-key': key } });
-      if (res.ok) {
-        const data = await res.json();
-        const remaining = data.character_limit - data.character_count;
-        if (badge) {
-          badge.style.color = '#00ff66';
-          badge.innerText = t.credLeft.replace('{rem}', remaining.toLocaleString()).replace('{limit}', data.character_limit.toLocaleString()); badge.dataset.state = 'limit'; badge.dataset.rem = remaining.toLocaleString(); badge.dataset.limit = data.character_limit.toLocaleString();
-        }
-      } else {
-        if (badge) { badge.style.color = '#ff4d4d'; badge.innerText = t.noCred; badge.dataset.state = 'nocred'; }
-      }
-    } catch (e) {
-      if (badge) { badge.style.color = '#ff4d4d'; badge.innerText = t.noCred; badge.dataset.state = 'nocred'; }
-    }
-  } else if (provider === 'deepgram') {
-    try {
-      const res = await fetch('https://api.deepgram.com/v1/listen', { 
+      if (!res.ok) return setBadge(badge, checkId, 'nocred');
+      const data = await res.json();
+      const remaining = data.character_limit - data.character_count;
+      setBadge(badge, checkId, 'limit', remaining.toLocaleString(), data.character_limit.toLocaleString());
+    } else if (provider === 'deepgram') {
+      // An authenticated request without audio returns 400; a bad key returns 401/403
+      const res = await fetch('https://api.deepgram.com/v1/listen', {
         method: 'POST',
-        headers: { 'Authorization': `Token ${key}` } 
+        headers: { 'Authorization': `Token ${key}` }
       });
-      
-      if (res.status === 400 || res.ok) {
-        if (badge) { badge.style.color = '#00ff66'; badge.innerText = t.credAvail; badge.dataset.state = 'avail'; }
-      } else {
-        if (badge) { badge.style.color = '#ff4d4d'; badge.innerText = t.noCred; badge.dataset.state = 'nocred'; }
-      }
-    } catch (e) {
-      if (badge) { badge.style.color = '#ff4d4d'; badge.innerText = t.noCred; badge.dataset.state = 'nocred'; }
+      setBadge(badge, checkId, res.status === 400 || res.ok ? 'avail' : 'nocred');
     }
+  } catch (e) {
+    setBadge(badge, checkId, 'nocred');
   }
 }
 
 async function checkLlmCredits() {
-  const t = typeof UI_TRANSLATIONS !== 'undefined' ? (UI_TRANSLATIONS[document.getElementById('uiLanguage').value] || UI_TRANSLATIONS.en) : { reqKey: t.reqKey, credAvail: t.credAvail, noCred: t.noCred };
   const provider = document.getElementById('llmProvider').value;
   const llmKey = document.getElementById('llmKey').value.trim();
   const badge = document.getElementById('llmCredits');
-
-  if (!llmKey) {
-    if (badge) {
-      badge.style.color = '#888';
-      badge.innerText = t.reqKey; badge.dataset.state = 'req';
-    }
-    return;
-  }
+  const checkId = startBadgeCheck(badge);
+  if (!llmKey) return setBadge(badge, checkId, 'req');
 
   try {
     let url = '', headers = {};
@@ -476,13 +478,9 @@ async function checkLlmCredits() {
     }
 
     const res = await fetch(url, { headers });
-    if (res.ok) {
-      if (badge) { badge.style.color = '#00ff66'; badge.innerText = t.credAvail; badge.dataset.state = 'avail'; }
-    } else {
-      if (badge) { badge.style.color = '#ff4d4d'; badge.innerText = t.noCred; badge.dataset.state = 'nocred'; }
-    }
+    setBadge(badge, checkId, res.ok ? 'avail' : 'nocred');
   } catch (e) {
-    if (badge) { badge.style.color = '#ff4d4d'; badge.innerText = t.noCred; badge.dataset.state = 'nocred'; }
+    setBadge(badge, checkId, 'nocred');
   }
 }
 
@@ -993,13 +991,5 @@ function applyUILanguage() {
   updateTtsKeyField();
   updateLlmKeyField();
   populateVoices();
-  ['sttCredits', 'ttsCredits', 'llmCredits'].forEach(id => { 
-    const b = document.getElementById(id); 
-    if (b && b.dataset.state && t) { 
-      if (b.dataset.state === 'req') b.innerText = t.reqKey; 
-      else if (b.dataset.state === 'avail') b.innerText = t.credAvail; 
-      else if (b.dataset.state === 'nocred') b.innerText = t.noCred; 
-      else if (b.dataset.state === 'limit') b.innerText = t.credLeft.replace('{rem}', b.dataset.rem).replace('{limit}', b.dataset.limit); 
-    } 
-  });
+  ['sttCredits', 'ttsCredits', 'llmCredits'].forEach(id => renderBadge(document.getElementById(id)));
 }
