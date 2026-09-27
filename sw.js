@@ -1,4 +1,4 @@
-const CACHE_NAME = 'voice-assistant-cache-v3';
+const CACHE_NAME = 'voice-assistant-cache-v4';
 const urlsToCache = [
   './',
   './index.html',
@@ -37,7 +37,9 @@ self.addEventListener('fetch', event => {
   if (new URL(event.request.url).origin !== self.location.origin) return;
 
   event.respondWith(
-    fetch(event.request)
+    // 'no-cache' revalidates with the server instead of trusting the browser's HTTP cache,
+    // so a fresh index.html is never paired with a stale app.js after a deploy
+    fetch(event.request.url, { cache: 'no-cache' })
       .then(response => {
         // If network fetch succeeds, update the local cache silently
         const responseClone = response.clone();
