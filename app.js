@@ -282,14 +282,13 @@ function onLanguageChange() {
 
 function populateLanguages() {
   const ttsP = document.getElementById('ttsProvider').value;
-  const sttP = document.getElementById('sttProvider').value;
   const langSelect = document.getElementById('selectedLanguage');
   const savedLang = localStorage.getItem('selected_language') || 'en';
-  
+
   langSelect.innerHTML = '';
-  
-  const catalogKey = (ttsP === 'elevenlabs' || sttP === 'elevenlabs') ? 'elevenlabs' : 'deepgram';
-  const languages = SUPPORTED_LANGUAGES[catalogKey] || SUPPORTED_LANGUAGES.deepgram;
+
+  // Only offer languages the selected TTS provider can speak
+  const languages = SUPPORTED_LANGUAGES[ttsP] || SUPPORTED_LANGUAGES.deepgram;
   
   languages.forEach(l => {
     const opt = document.createElement('option');
