@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self' https://api.deepgram.com https://api.elevenlabs.io https://api.mistral.ai https://api.groq.com https://generativelanguage.googleapis.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="referrer" content="no-referrer">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#181818">
   <link rel="apple-touch-icon" href="assets/icon-192.png">
-  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Voice Assistant</title>
   <style>
@@ -223,7 +225,7 @@
     <!-- UI Language Selector -->
     <div style="display: flex; justify-content: flex-end; margin-bottom: -5px;">
       <label id="lbl-ui-lang" style="font-size: 0.8rem; margin-right: 8px; align-self: center;">UI Language</label>
-      <select id="uiLanguage" onchange="applyUILanguage()" style="width: auto; padding: 4px 24px 4px 8px; font-size: 0.8rem;"></select>
+      <select id="uiLanguage" style="width: auto; padding: 4px 24px 4px 8px; font-size: 0.8rem;"></select>
     </div>
     
     <!-- 1) Speech-to-Text Provider (Default: Deepgram) -->
@@ -231,13 +233,13 @@
       <label id="lbl-stt" style="font-size: 0.9rem; font-weight: 600;">Speech-to-Text Provider</label>
       <div class="grid-2" style="margin-top: 6px;">
         <div>
-          <select id="sttProvider" onchange="onSttProviderChange()">
+          <select id="sttProvider">
             <option value="deepgram">Deepgram Nova-2</option>
             <option value="elevenlabs">ElevenLabs Scribe</option>
           </select>
         </div>
         <div>
-          <input type="password" id="sttKey" placeholder="Paste STT Key" oninput="onSttKeyChange()" />
+          <input type="password" id="sttKey" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Paste STT Key" />
           <span id="sttCredits" class="credit-badge"></span>
         </div>
       </div>
@@ -248,13 +250,13 @@
       <label id="lbl-tts" style="font-size: 0.9rem; font-weight: 600;">Text-to-Speech Provider</label>
       <div class="grid-2" style="margin-top: 6px;">
         <div>
-          <select id="ttsProvider" onchange="onTtsEngineChange()">
+          <select id="ttsProvider">
             <option value="deepgram">Deepgram Aura</option>
             <option value="elevenlabs">ElevenLabs Flash v2.5</option>
           </select>
         </div>
         <div>
-          <input type="password" id="ttsKey" placeholder="Paste TTS Key" oninput="onTtsKeyChange()" />
+          <input type="password" id="ttsKey" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Paste TTS Key" />
           <span id="ttsCredits" class="credit-badge"></span>
         </div>
       </div>
@@ -264,11 +266,11 @@
     <div class="grid-2">
       <div>
         <label id="lbl-lang" style="font-size: 0.85rem;">Assistant Language</label>
-        <select id="selectedLanguage" onchange="onLanguageChange()"></select>
+        <select id="selectedLanguage"></select>
       </div>
       <div>
         <label id="lbl-voice" style="font-size: 0.85rem;">Assistant Voice Persona</label>
-        <select id="ttsVoice" onchange="saveSettings()"></select>
+        <select id="ttsVoice"></select>
       </div>
     </div>
 
@@ -277,14 +279,14 @@
       <label id="lbl-llm" style="font-size: 0.9rem; font-weight: 600;">AI Engine (LLM) Provider</label>
       <div class="grid-2" style="margin-top: 6px;">
         <div>
-          <select id="llmProvider" onchange="onLlmProviderChange()">
+          <select id="llmProvider">
             <option value="mistral">Mistral AI</option>
             <option value="gemini">Google Gemini</option>
             <option value="groq">Groq</option>
           </select>
         </div>
         <div>
-          <input type="password" id="llmKey" placeholder="Paste LLM Key" oninput="onLlmKeyChange()" />
+          <input type="password" id="llmKey" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Paste LLM Key" />
           <span id="llmCredits" class="credit-badge"></span>
         </div>
       </div>
@@ -293,7 +295,7 @@
     <!-- Collapsible Voice Assistant Instructions -->
     <details open>
       <summary id="sum-inst">Voice Assistant Instructions</summary>
-      <textarea id="systemPrompt" rows="3" onchange="saveSettings()">You are a friend in a real-time spoken voice conversation. The user has a speech impediment, which may occur through repeating words, stretching out a sound longer than needed, or difficulty getting sounds and words out. 
+      <textarea id="systemPrompt" rows="3">You are a friend in a real-time spoken voice conversation. The user has a speech impediment, which may occur through repeating words, stretching out a sound longer than needed, or difficulty getting sounds and words out. 
 Repetitions are when a person repeats the first sound or syllable of a word at least three times more than is needed. It may sound like this: “I w-w-w-want a snack” or “Put, put, put, put that away.”
 Prolongations in stuttering are when a person holds out a sound for too long, to where the speech sounds abnormal. It may sound like: “Ssssssssee the airplane?” or “Wwwwwwhere are you?”
 Blocks are when a person is unable to move their mouth and use their voice to continue speaking. No voice or sound comes out during a block. Here’s an example of a block: “I am...............so tired.” or “I am. so. tired.”
@@ -329,7 +331,7 @@ Formatting Rules:
     </details>
 
     <!-- Clickable Status Window with Waveform Visualizer -->
-    <div id="statusCard" class="status-card status-idle" onclick="handleStatusCardClick()">
+    <div id="statusCard" class="status-card status-idle">
       <div id="statusText" class="status-title">READY</div>
       <div id="subStatusText">Press Spacebar or Click here to start recording</div>
       
@@ -345,7 +347,7 @@ Formatting Rules:
       </div>
 
       <div class="btn-group">
-        <button class="action-btn" id="btn-clear" onclick="event.stopPropagation(); clearMemory()">Clear Memory (ESC)</button>
+        <button class="action-btn" id="btn-clear">Clear Memory (ESC)</button>
       </div>
     </div>
 
@@ -356,14 +358,14 @@ Formatting Rules:
     <!-- Debug Inspector Toggle & Panel -->
     <div>
       <label style="font-size: 0.85rem; display: flex; align-items: center; gap: 8px; cursor: pointer; white-space: nowrap;">
-        <input type="checkbox" id="debugToggle" onchange="toggleDebug()" /> <span id="lbl-debug">Enable Debug Inspector</span>
+        <input type="checkbox" id="debugToggle" /> <span id="lbl-debug">Enable Debug Inspector</span>
       </label>
     </div>
 
     <div id="debugPanel">
       <div style="display: flex; justify-content: space-between; align-items: center;">
         <span style="color: #888;">--- TIMING & DIAGNOSTICS ---</span>
-        <button class="action-btn" style="padding: 2px 8px; font-size: 0.75rem;" onclick="copyDebugText()">Copy Debug Logs</button>
+        <button class="action-btn" id="btn-copy-debug" style="padding: 2px 8px; font-size: 0.75rem;">Copy Debug Logs</button>
       </div>
       <div id="debugLogs" style="margin-top: 6px;">Awaiting execution...</div>
       <div style="color: #888; margin: 10px 0 2px 0;">--- RAW STREAM AUDIT ---</div>
@@ -380,12 +382,5 @@ Formatting Rules:
 
   <script src="translations.js"></script>
   <script src="app.js"></script>
-  <script>
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker.register("sw.js").catch(err => console.error("SW Registration failed:", err));
-      });
-    }
-  </script>
 </body>
 </html>

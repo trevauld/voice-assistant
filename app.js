@@ -163,6 +163,23 @@ document.addEventListener('DOMContentLoaded', () => {
   populateUiLanguages();
   applyUILanguage();
 
+  // UI event wiring (kept out of HTML attributes so the CSP can forbid inline scripts)
+  const on = (id, event, handler) => document.getElementById(id).addEventListener(event, handler);
+  on('uiLanguage', 'change', applyUILanguage);
+  on('sttProvider', 'change', onSttProviderChange);
+  on('sttKey', 'input', onSttKeyChange);
+  on('ttsProvider', 'change', onTtsEngineChange);
+  on('ttsKey', 'input', onTtsKeyChange);
+  on('selectedLanguage', 'change', onLanguageChange);
+  on('ttsVoice', 'change', saveSettings);
+  on('llmProvider', 'change', onLlmProviderChange);
+  on('llmKey', 'input', onLlmKeyChange);
+  on('systemPrompt', 'change', saveSettings);
+  on('statusCard', 'click', handleStatusCardClick);
+  on('btn-clear', 'click', (event) => { event.stopPropagation(); clearMemory(); });
+  on('debugToggle', 'change', toggleDebug);
+  on('btn-copy-debug', 'click', copyDebugText);
+
   // Global Keyboard Hotkeys
   document.addEventListener('keydown', async (event) => {
     if (event.code === 'Escape') {
@@ -185,6 +202,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(err => console.error('SW Registration failed:', err));
+  });
+}
 
 function updateSttKeyField() {
   const provider = document.getElementById('sttProvider').value;
@@ -353,7 +376,7 @@ async function probeKeyCredits(provider, key, badge) {
 
   if (provider === 'elevenlabs') {
     try {
-      const res = await fetch('https://elevenlabs-proxy.keremk.workers.dev/v1/user/subscription', { headers: { 'xi-api-key': key } });
+      const res = await fetch('https://api.elevenlabs.io/v1/user/subscription', { headers: { 'xi-api-key': key } });
       if (res.ok) {
         const data = await res.json();
         const remaining = data.character_limit - data.character_count;
@@ -719,7 +742,7 @@ function stopAndSendRecording() {
         formData.append('model_id', 'scribe_v2');
         if (selectedLang) formData.append('language_code', selectedLang);
 
-        const sttResponse = await fetch('https://elevenlabs-proxy.keremk.workers.dev/v1/speech-to-text', {
+        const sttResponse = await fetch('https://api.elevenlabs.io/v1/speech-to-text', {
           method: 'POST',
           headers: { 'xi-api-key': sttKey },
           body: formData,
@@ -793,7 +816,7 @@ function stopAndSendRecording() {
         const voiceId = selectedVoiceTag.replace('xi:', '');
         if (!ttsKey) throw new Error("ElevenLabs API Key is required for TTS synthesis.");
 
-        const ttsResponse = await fetch(`https://elevenlabs-proxy.keremk.workers.dev/v1/text-to-speech/${voiceId}?output_format=mp3_22050_32`, {
+        const ttsResponse = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_22050_32`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
