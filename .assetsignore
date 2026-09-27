@@ -1,0 +1,11 @@
+# Files in the repo that are not part of the website (Cloudflare static assets)
+node_modules
+.git
+.wrangler
+.gitignore
+.assetsignore
+package.json
+package-lock.json
+wrangler.json
+wrangler.jsonc
+wrangler.toml
