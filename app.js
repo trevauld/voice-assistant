@@ -150,8 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('ttsProvider').value = ttsProvider;
   document.getElementById('llmProvider').value = llmProvider;
 
-  localStorage.setItem('system_prompt', DEFAULT_SYSTEM_PROMPT);
-  document.getElementById('systemPrompt').value = DEFAULT_SYSTEM_PROMPT;
+  document.getElementById('systemPrompt').value = localStorage.getItem('system_prompt') || DEFAULT_SYSTEM_PROMPT;
 
   updateSttKeyField();
   updateTtsKeyField();
@@ -318,7 +317,13 @@ function populateVoices() {
 function saveSettings() {
   localStorage.setItem('selected_language', document.getElementById('selectedLanguage').value);
   localStorage.setItem('tts_voice', document.getElementById('ttsVoice').value);
-  localStorage.setItem('system_prompt', document.getElementById('systemPrompt').value);
+  // Only persist customized instructions, so users on the default keep receiving updates to it
+  const prompt = document.getElementById('systemPrompt').value;
+  if (prompt.trim() && prompt !== DEFAULT_SYSTEM_PROMPT) {
+    localStorage.setItem('system_prompt', prompt);
+  } else {
+    localStorage.removeItem('system_prompt');
+  }
 }
 
 // Credit Probe Implementations
@@ -397,7 +402,8 @@ async function checkLlmCredits() {
   try {
     let url = '', headers = {};
     if (provider === 'gemini') {
-      url = `https://generativelanguage.googleapis.com/v1beta/models?key=${llmKey}`;
+      url = 'https://generativelanguage.googleapis.com/v1beta/models';
+      headers = { 'x-goog-api-key': llmKey };
     } else if (provider === 'groq') {
       url = 'https://api.groq.com/openai/v1/models';
       headers = { 'Authorization': `Bearer ${llmKey}` };
@@ -554,9 +560,9 @@ async function streamSelectedLLM(systemPrompt, history, signal) {
       generationConfig: { maxOutputTokens: 450, temperature: 0.7, thinkingConfig: { thinkingLevel: "LOW" } }
     };
 
-    const response = await fetch(`${preset.baseUrl}/${preset.model}:streamGenerateContent?alt=sse&key=${apiKey}`, {
+    const response = await fetch(`${preset.baseUrl}/${preset.model}:streamGenerateContent?alt=sse`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
       body: JSON.stringify(payload),
       signal
     });

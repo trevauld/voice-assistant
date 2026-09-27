@@ -1,4 +1,4 @@
-const CACHE_NAME = 'voice-assistant-cache-v2';
+const CACHE_NAME = 'voice-assistant-cache-v3';
 const urlsToCache = [
   './',
   './index.html',
@@ -32,8 +32,9 @@ self.addEventListener('activate', event => {
 
 // Fetch Event: Network-First strategy
 self.addEventListener('fetch', event => {
-  // Only handle GET requests (ignore API POSTs to Deepgram/ElevenLabs)
+  // Only handle same-origin GET requests; never cache third-party API calls (they carry users' keys)
   if (event.request.method !== 'GET') return;
+  if (new URL(event.request.url).origin !== self.location.origin) return;
 
   event.respondWith(
     fetch(event.request)
