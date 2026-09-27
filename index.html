@@ -55,6 +55,7 @@
       min-height: 80px;
     }
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .centered-half { width: calc(50% - 7px); margin: 8px auto 0; }
 
     /* Native Checkbox Styling */
     input[type="checkbox"] {
@@ -182,6 +183,9 @@
       .grid-2 {
         grid-template-columns: 1fr;
       }
+      .centered-half {
+        width: 100%;
+      }
       input[type="text"], input[type="password"], textarea, select {
         font-size: 1.1rem;
         padding: 14px 12px;
@@ -222,19 +226,15 @@
 </head>
 <body>
   <div class="container">
-    <!-- UI Language Selector -->
-    <div style="display: flex; justify-content: flex-end; margin-bottom: -5px;">
-      <label id="lbl-ui-lang" style="font-size: 0.8rem; margin-right: 8px; align-self: center;">UI Language</label>
-      <select id="uiLanguage" style="width: auto; padding: 4px 24px 4px 8px; font-size: 0.8rem;"></select>
-    </div>
-    
-    <!-- Chat Language (drives which providers can be used) -->
-    <div>
-      <label id="lbl-lang" style="font-size: 0.9rem; font-weight: 600;">Chat Language</label>
-      <div class="grid-2" style="margin-top: 6px;">
-        <div>
-          <select id="selectedLanguage"></select>
-        </div>
+    <!-- Chat Language (drives which providers can be used) & UI Language -->
+    <div class="grid-2">
+      <div>
+        <label id="lbl-lang" style="font-size: 0.9rem; font-weight: 600;">Chat Language</label>
+        <select id="selectedLanguage" style="margin-top: 6px;"></select>
+      </div>
+      <div>
+        <label id="lbl-ui-lang" style="font-size: 0.9rem; font-weight: 600;">UI Language</label>
+        <select id="uiLanguage" style="margin-top: 6px;"></select>
       </div>
     </div>
 
@@ -270,11 +270,9 @@
           <span id="ttsCredits" class="credit-badge"></span>
         </div>
       </div>
-      <div class="grid-2" style="margin-top: 8px;">
-        <div>
-          <label id="lbl-voice" style="font-size: 0.85rem;">Assistant Voice Persona</label>
-          <select id="ttsVoice"></select>
-        </div>
+      <div class="centered-half">
+        <label id="lbl-voice" style="font-size: 0.85rem;">Assistant Voice Persona</label>
+        <select id="ttsVoice"></select>
       </div>
     </div>
 
