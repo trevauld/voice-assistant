@@ -349,6 +349,23 @@ function saveSettings() {
   }
 }
 
+// ElevenLabs is called directly; if a browser extension blocks api.elevenlabs.io, fall back to
+// our pass-through proxy (proxy/worker.js) for the rest of the session
+const ELEVENLABS_DIRECT = 'https://api.elevenlabs.io';
+const ELEVENLABS_PROXY = 'https://elevenlabs-proxy.keremk.workers.dev';
+let elevenLabsBase = ELEVENLABS_DIRECT;
+
+async function elevenLabsFetch(path, init) {
+  try {
+    return await fetch(elevenLabsBase + path, init);
+  } catch (err) {
+    if (err.name === 'AbortError' || elevenLabsBase === ELEVENLABS_PROXY) throw err;
+    console.warn('Direct ElevenLabs request blocked, switching to proxy:', err.message);
+    elevenLabsBase = ELEVENLABS_PROXY;
+    return fetch(elevenLabsBase + path, init);
+  }
+}
+
 // Credit Probe Implementations
 async function checkSttCredits() {
   const provider = document.getElementById('sttProvider').value;
@@ -376,7 +393,7 @@ async function probeKeyCredits(provider, key, badge) {
 
   if (provider === 'elevenlabs') {
     try {
-      const res = await fetch('https://api.elevenlabs.io/v1/user/subscription', { headers: { 'xi-api-key': key } });
+      const res = await elevenLabsFetch('/v1/user/subscription', { headers: { 'xi-api-key': key } });
       if (res.ok) {
         const data = await res.json();
         const remaining = data.character_limit - data.character_count;
@@ -742,7 +759,7 @@ function stopAndSendRecording() {
         formData.append('model_id', 'scribe_v2');
         if (selectedLang) formData.append('language_code', selectedLang);
 
-        const sttResponse = await fetch('https://api.elevenlabs.io/v1/speech-to-text', {
+        const sttResponse = await elevenLabsFetch('/v1/speech-to-text', {
           method: 'POST',
           headers: { 'xi-api-key': sttKey },
           body: formData,
@@ -816,7 +833,7 @@ function stopAndSendRecording() {
         const voiceId = selectedVoiceTag.replace('xi:', '');
         if (!ttsKey) throw new Error("ElevenLabs API Key is required for TTS synthesis.");
 
-        const ttsResponse = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_22050_32`, {
+        const ttsResponse = await elevenLabsFetch(`/v1/text-to-speech/${voiceId}?output_format=mp3_22050_32`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

@@ -9,3 +9,4 @@ package-lock.json
 wrangler.json
 wrangler.jsonc
 wrangler.toml
+proxy

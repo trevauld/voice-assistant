@@ -1,0 +1,10 @@
+// Deploy with: cd proxy && npx wrangler deploy
+{
+  "name": "elevenlabs-proxy",
+  "main": "worker.js",
+  "compatibility_date": "2026-09-24",
+  "workers_dev": true,
+  "preview_urls": false,
+  // Keep request logging off: requests carry users' API keys
+  "observability": { "enabled": false, "logs": { "enabled": false, "invocation_logs": false } }
+}
