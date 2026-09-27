@@ -377,13 +377,15 @@ const ELEVENLABS_PROXY = 'https://elevenlabs-proxy.keremk.workers.dev';
 let elevenLabsBase = ELEVENLABS_DIRECT;
 
 async function elevenLabsFetch(path, init) {
+  // Decide per request: concurrent requests may all fail direct before any of them switches the base
+  const base = elevenLabsBase;
   try {
-    return await fetch(elevenLabsBase + path, init);
+    return await fetch(base + path, init);
   } catch (err) {
-    if (err.name === 'AbortError' || elevenLabsBase === ELEVENLABS_PROXY) throw err;
+    if (err.name === 'AbortError' || base === ELEVENLABS_PROXY) throw err;
     console.warn('Direct ElevenLabs request blocked, switching to proxy:', err.message);
     elevenLabsBase = ELEVENLABS_PROXY;
-    return fetch(elevenLabsBase + path, init);
+    return fetch(ELEVENLABS_PROXY + path, init);
   }
 }
 
