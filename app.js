@@ -28,7 +28,7 @@ const PROVIDER_PRESETS = {
   }
 };
 
-// Languages each provider supports (Deepgram: same 5 for STT and TTS; ElevenLabs: 32 for both)
+// Languages each provider supports (Deepgram: 5 for STT and TTS; ElevenLabs and Cartesia: 32 for both)
 const SUPPORTED_LANGUAGES = {
   deepgram: [
     { code: 'en', name: 'English' },
@@ -95,6 +95,27 @@ const ELEVENLABS_FEMALE_VOICES = [
   { id: 'xi:pFZP5JQG7iQjIQuC4Bku', name: 'Lily (Warm, Fast)' }
 ];
 
+// Cartesia: native female voices for the chat language are loaded with the user's key; until then these
+// recommended voices are used (they speak every language, but keep their own accent)
+const CARTESIA_API = 'https://api.cartesia.ai';
+const CARTESIA_VERSION = '2026-08-14';
+const CARTESIA_DEFAULT_VOICES = [
+  { id: 'ct:db6b0ed5-d5d3-463d-ae85-518a07d3c2b4', name: 'Skylar' },
+  { id: 'ct:9626c31c-bec5-4cca-baa8-f8ba9e84c8bc', name: 'Jacqueline' },
+  { id: 'ct:62ae83ad-4f6a-430b-af41-a9bede9286ca', name: 'Gemma' }
+];
+const cartesiaVoiceCache = {};
+
+function cartesiaHeaders(key) {
+  return { 'Authorization': `Bearer ${key}`, 'Cartesia-Version': CARTESIA_VERSION };
+}
+
+// Speech providers in fallback order, and their display names
+const SPEECH_PROVIDERS = ['deepgram', 'elevenlabs', 'cartesia'];
+const PROVIDER_NAMES = { deepgram: 'Deepgram', elevenlabs: 'ElevenLabs', cartesia: 'Cartesia' };
+
+SUPPORTED_LANGUAGES.cartesia = SUPPORTED_LANGUAGES.elevenlabs;
+
 let currentAudio = null;
 let pipelineAbortController = null;
 let mediaRecorder = null;
@@ -125,19 +146,19 @@ Formatting Rules:
 - Ask a quick question back if something's unclear, instead of guessing at length.`;
 
 // Key Management Helpers
+// A key entered for STT is also offered for TTS on the same provider (and vice versa)
+const SHARED_KEY_NAMES = { deepgram: 'dg_key', elevenlabs: 'xi_key', cartesia: 'ct_key' };
+
 function getSavedKey(type, provider) {
   const stored = localStorage.getItem(`${type}_key_${provider}`);
   if (stored) return stored;
-  if (provider === 'deepgram') return localStorage.getItem('dg_key') || '';
-  if (provider === 'elevenlabs') return localStorage.getItem('xi_key') || '';
-  return '';
+  return SHARED_KEY_NAMES[provider] ? localStorage.getItem(SHARED_KEY_NAMES[provider]) || '' : '';
 }
 
 function setSavedKey(type, provider, val) {
   const cleanVal = val.trim();
   localStorage.setItem(`${type}_key_${provider}`, cleanVal);
-  if (provider === 'deepgram') localStorage.setItem('dg_key', cleanVal);
-  if (provider === 'elevenlabs') localStorage.setItem('xi_key', cleanVal);
+  if (SHARED_KEY_NAMES[provider]) localStorage.setItem(SHARED_KEY_NAMES[provider], cleanVal);
 }
 
 // Master Safe Startup Sequence
@@ -213,14 +234,14 @@ function updateSttKeyField() {
   const provider = document.getElementById('sttProvider').value;
   document.getElementById('sttKey').value = getSavedKey('stt', provider);
   const t = typeof UI_TRANSLATIONS !== 'undefined' ? (UI_TRANSLATIONS[document.getElementById('uiLanguage').value] || UI_TRANSLATIONS.en) : {pasteKey: 'Paste {provider} Key'};
-  document.getElementById('sttKey').placeholder = t.pasteKey.replace('{provider}', provider === 'deepgram' ? 'Deepgram' : 'ElevenLabs');
+  document.getElementById('sttKey').placeholder = t.pasteKey.replace('{provider}', PROVIDER_NAMES[provider]);
 }
 
 function updateTtsKeyField() {
   const provider = document.getElementById('ttsProvider').value;
   document.getElementById('ttsKey').value = getSavedKey('tts', provider);
   const t = typeof UI_TRANSLATIONS !== 'undefined' ? (UI_TRANSLATIONS[document.getElementById('uiLanguage').value] || UI_TRANSLATIONS.en) : {pasteKey: 'Paste {provider} Key'};
-  document.getElementById('ttsKey').placeholder = t.pasteKey.replace('{provider}', provider === 'deepgram' ? 'Deepgram' : 'ElevenLabs');
+  document.getElementById('ttsKey').placeholder = t.pasteKey.replace('{provider}', PROVIDER_NAMES[provider]);
 }
 
 function updateLlmKeyField() {
@@ -265,7 +286,7 @@ function onTtsKeyChange() {
   const provider = document.getElementById('ttsProvider').value;
   const val = document.getElementById('ttsKey').value;
   setSavedKey('tts', provider, val);
-  scheduleKeyCheck('tts', checkTtsCredits);
+  scheduleKeyCheck('tts', () => { checkTtsCredits(); populateVoices(); });
 }
 
 function onLlmKeyChange() {
@@ -279,18 +300,26 @@ function providerSupports(provider, lang) {
   return (SUPPORTED_LANGUAGES[provider] || SUPPORTED_LANGUAGES.deepgram).some(l => l.code === lang);
 }
 
+// Prefer the provider the other side already uses, then one with a saved key, then the first that fits
+function pickProviderFor(type, lang, otherProvider) {
+  const candidates = SPEECH_PROVIDERS.filter(p => providerSupports(p, lang));
+  return candidates.find(p => p === otherProvider)
+    || candidates.find(p => getSavedKey(type, p))
+    || candidates[0];
+}
+
 function onLanguageChange() {
   const lang = document.getElementById('selectedLanguage').value;
   localStorage.setItem('selected_language', lang);
 
-  // Picking an ElevenLabs-only language switches any Deepgram side over to ElevenLabs
+  // Picking a language a provider can't handle switches that side to one that can
   // (set both selects before running either handler, so the language isn't reset in between)
   const stt = document.getElementById('sttProvider');
   const tts = document.getElementById('ttsProvider');
   const switchStt = !providerSupports(stt.value, lang);
   const switchTts = !providerSupports(tts.value, lang);
-  if (switchStt) stt.value = 'elevenlabs';
-  if (switchTts) tts.value = 'elevenlabs';
+  if (switchStt) stt.value = pickProviderFor('stt', lang, tts.value);
+  if (switchTts) tts.value = pickProviderFor('tts', lang, stt.value);
   if (switchStt) onSttProviderChange();
   if (switchTts) onTtsEngineChange();
 
@@ -304,7 +333,7 @@ function populateLanguages() {
 
   langSelect.innerHTML = '';
 
-  // Always list every language; ones Deepgram can't handle are tagged and listed after a separator
+  // Always list every language; ones not every provider can handle are tagged with the providers that can
   const addOption = (value, text, disabled = false) => {
     const opt = document.createElement('option');
     opt.value = value;
@@ -312,13 +341,14 @@ function populateLanguages() {
     opt.disabled = disabled;
     langSelect.appendChild(opt);
   };
-  const [common, elevenLabsOnly] = [true, false].map(inDeepgram =>
-    SUPPORTED_LANGUAGES.elevenlabs.filter(l => providerSupports('deepgram', l.code) === inDeepgram));
-  common.forEach(l => addOption(l.code, l.name));
+  const providersFor = code => SPEECH_PROVIDERS.filter(p => providerSupports(p, code));
+  const [universal, partial] = [true, false].map(all =>
+    SUPPORTED_LANGUAGES.elevenlabs.filter(l => (providersFor(l.code).length === SPEECH_PROVIDERS.length) === all));
+  universal.forEach(l => addOption(l.code, l.name));
   addOption('', '──────────', true);
-  elevenLabsOnly.forEach(l => addOption(l.code, `${l.name} · ElevenLabs`));
+  partial.forEach(l => addOption(l.code, `${l.name} · ${providersFor(l.code).map(p => PROVIDER_NAMES[p]).join(', ')}`));
 
-  // Switching a provider to Deepgram while an ElevenLabs-only language is selected falls back to English
+  // Switching a provider to one that can't handle the selected language falls back to English
   const sttP = document.getElementById('sttProvider').value;
   const ttsP = document.getElementById('ttsProvider').value;
   const lang = providerSupports(sttP, savedLang) && providerSupports(ttsP, savedLang) ? savedLang : 'en';
@@ -338,6 +368,18 @@ function populateVoices() {
 
   if (provider === 'elevenlabs') {
     voices = ELEVENLABS_FEMALE_VOICES;
+  } else if (provider === 'cartesia') {
+    const key = document.getElementById('ttsKey').value.trim();
+    const cached = cartesiaVoiceCache[`${key}|${lang}`];
+    voices = cached && cached.length ? cached : CARTESIA_DEFAULT_VOICES;
+    if (key && !cached) {
+      loadCartesiaVoices(key, lang).then(() => {
+        const still = document.getElementById('ttsProvider').value === 'cartesia'
+          && document.getElementById('selectedLanguage').value === lang
+          && document.getElementById('ttsKey').value.trim() === key;
+        if (still) populateVoices();
+      });
+    }
   } else {
     voices = DEEPGRAM_VOICES[lang] || DEEPGRAM_VOICES['en'];
   }
@@ -355,6 +397,18 @@ function populateVoices() {
     voiceSelect.value = savedVoice;
   } else if (voiceSelect.options.length > 0) {
     voiceSelect.selectedIndex = 0;
+  }
+}
+
+// Native female voices for a language; an empty list (e.g. bad key) falls back to the defaults
+async function loadCartesiaVoices(key, lang) {
+  const cacheKey = `${key}|${lang}`;
+  try {
+    const res = await fetch(`${CARTESIA_API}/voices?language=${encodeURIComponent(lang)}&gender=feminine&limit=6`, { headers: cartesiaHeaders(key) });
+    const data = res.ok ? (await res.json()).data || [] : [];
+    cartesiaVoiceCache[cacheKey] = data.map(v => ({ id: `ct:${v.id}`, name: v.name }));
+  } catch (e) {
+    cartesiaVoiceCache[cacheKey] = [];
   }
 }
 
@@ -451,6 +505,10 @@ async function probeKeyCredits(provider, key, badge) {
         headers: { 'Authorization': `Token ${key}` }
       });
       setBadge(badge, checkId, res.status === 400 || res.ok ? 'avail' : 'nocred');
+    } else if (provider === 'cartesia') {
+      // Cartesia has no credits endpoint; a successful authenticated request means the key works
+      const res = await fetch(`${CARTESIA_API}/voices?limit=1`, { headers: cartesiaHeaders(key) });
+      setBadge(badge, checkId, res.ok ? 'avail' : 'nocred');
     }
   } catch (e) {
     setBadge(badge, checkId, 'nocred');
@@ -794,6 +852,26 @@ function stopAndSendRecording() {
         const sttData = await sttResponse.json();
         userText = sttData.text || sttData.transcript || "";
         checkSttCredits();
+      } else if (sttProvider === 'cartesia') {
+        const extension = (window.currentRecordingMime || 'audio/webm').includes('mp4') ? 'mp4' : 'webm';
+        const formData = new FormData();
+        formData.append('file', audioBlob, `speech.${extension}`);
+        formData.append('model', 'ink-whisper');
+        formData.append('language', selectedLang);
+
+        const sttResponse = await fetch(`${CARTESIA_API}/stt`, {
+          method: 'POST',
+          headers: cartesiaHeaders(sttKey),
+          body: formData,
+          signal
+        });
+
+        if (!sttResponse.ok) {
+          const errText = await sttResponse.text();
+          throw new Error(`Cartesia STT Failed (HTTP ${sttResponse.status}): ${errText}`);
+        }
+        const sttData = await sttResponse.json();
+        userText = sttData.text || "";
       } else {
         const sttResponse = await fetch(`https://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&language=${selectedLang}`, {
           method: 'POST',
@@ -874,6 +952,28 @@ function stopAndSendRecording() {
         }
         audioBlobResponse = await ttsResponse.blob();
         checkTtsCredits();
+
+      } else if (selectedVoiceTag.startsWith('ct:')) {
+        if (!ttsKey) throw new Error("Cartesia API Key is required for TTS synthesis.");
+
+        const ttsResponse = await fetch(`${CARTESIA_API}/tts/bytes`, {
+          method: 'POST',
+          headers: { ...cartesiaHeaders(ttsKey), 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model_id: 'sonic-3',
+            transcript: cleanAiText || "I understand.",
+            voice: selectedVoiceTag.replace('ct:', ''),
+            language: selectedLang,
+            output_format: { container: 'mp3', sample_rate: 44100, bit_rate: 128000 }
+          }),
+          signal
+        });
+
+        if (!ttsResponse.ok) {
+          const ctErr = await ttsResponse.text();
+          throw new Error(`Cartesia TTS Failed (HTTP ${ttsResponse.status}): ${ctErr}`);
+        }
+        audioBlobResponse = await ttsResponse.blob();
 
       } else {
         const voiceId = selectedVoiceTag.replace('dg:', '');

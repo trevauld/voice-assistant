@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self' https://api.deepgram.com https://api.elevenlabs.io https://elevenlabs-proxy.keremk.workers.dev https://api.mistral.ai https://api.groq.com https://generativelanguage.googleapis.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self' https://api.deepgram.com https://api.elevenlabs.io https://elevenlabs-proxy.keremk.workers.dev https://api.cartesia.ai https://api.mistral.ai https://api.groq.com https://generativelanguage.googleapis.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <meta name="referrer" content="no-referrer">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#181818">
@@ -246,6 +246,7 @@
           <select id="sttProvider">
             <option value="deepgram">Deepgram Nova-2</option>
             <option value="elevenlabs">ElevenLabs Scribe</option>
+            <option value="cartesia">Cartesia Ink Whisper</option>
           </select>
         </div>
         <div>
@@ -263,6 +264,7 @@
           <select id="ttsProvider">
             <option value="deepgram">Deepgram Aura</option>
             <option value="elevenlabs">ElevenLabs Flash v2.5</option>
+            <option value="cartesia">Cartesia Sonic 3</option>
           </select>
         </div>
         <div>
