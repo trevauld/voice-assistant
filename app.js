@@ -184,6 +184,8 @@ document.addEventListener('DOMContentLoaded', () => {
   populateUiLanguages();
   applyUILanguage();
 
+  restoreSections();
+
   // UI event wiring (kept out of HTML attributes so the CSP can forbid inline scripts)
   const on = (id, event, handler) => document.getElementById(id).addEventListener(event, handler);
   on('uiLanguage', 'change', applyUILanguage);
@@ -660,6 +662,7 @@ async function startRecording() {
 
   if (!sttKey || !llmKey) {
     const t = typeof UI_TRANSLATIONS !== "undefined" ? (UI_TRANSLATIONS[document.getElementById("uiLanguage").value] || UI_TRANSLATIONS.en) : {errKeys: "Please enter both Speech-to-Text and AI Engine API Keys."};
+    openSettings();
     alert(t.errKeys);
     return;
   }
@@ -1034,6 +1037,7 @@ function sendTypedMessage() {
   if (!text) return;
   if (!document.getElementById('llmKey').value.trim()) {
     const t = UI_TRANSLATIONS[document.getElementById('uiLanguage').value] || UI_TRANSLATIONS.en;
+    openSettings();
     alert(t.reqKey);
     return;
   }
@@ -1151,6 +1155,25 @@ async function runTurn({ audioBlob = null, typedText = '' }) {
   }
 }
 
+// Collapsible sections remember whether they were open. Settings always opens while a key is
+// missing, since the app can't be used until the keys are in.
+const SECTION_IDS = ['settingsSection', 'instSection', 'userSection', 'aiSection'];
+function allKeysEntered() {
+  return ['sttKey', 'ttsKey', 'llmKey'].every(id => document.getElementById(id).value.trim());
+}
+function restoreSections() {
+  for (const id of SECTION_IDS) {
+    const section = document.getElementById(id);
+    const saved = localStorage.getItem(`section_${id}`);
+    if (saved) section.open = saved === 'open';
+    if (id === 'settingsSection' && !allKeysEntered()) section.open = true;
+    section.addEventListener('toggle', () => localStorage.setItem(`section_${id}`, section.open ? 'open' : 'closed'));
+  }
+}
+function openSettings() {
+  document.getElementById('settingsSection').open = true;
+}
+
 function onSpeedChange() {
   localStorage.setItem('tts_speed', document.getElementById('ttsSpeed').value);
   if (currentAudio) currentAudio.playbackRate = getSpeakingSpeed();
@@ -1239,6 +1262,7 @@ function applyUILanguage() {
     'lbl-license': t.licenseText || 'AGPLv3 License',
     'lbl-help': t.helpText || 'Help',
     'lbl-speed': t.speed,
+    'sum-settings': t.settings,
     'btn-send-typed': t.send,
     'lbl-theme': t.theme,
     'opt-theme-system': t.themeSystem,
