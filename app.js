@@ -124,20 +124,10 @@ let audioChunks = [];
 let isRecording = false;
 let conversationHistory = [];
 
-const DEFAULT_SYSTEM_PROMPT = `You are a friend in a real-time spoken voice conversation. The user has a speech impediment, which may occur through repeating words, stretching out a sound longer than needed, or difficulty getting sounds and words out. 
-Repetitions are when a person repeats the first sound or syllable of a word at least three times more than is needed. It may sound like this: “I w-w-w-want a snack” or “Put, put, put, put that away.”
-Prolongations in stuttering are when a person holds out a sound for too long, to where the speech sounds abnormal. It may sound like: “Ssssssssee the airplane?” or “Wwwwwwhere are you?”
-Blocks are when a person is unable to move their mouth and use their voice to continue speaking. No voice or sound comes out during a block. Here’s an example of a block: “I am...............so tired.” or “I am. so. tired.”
-There can also be a combination of any of these modes. With three modes (R = repetition, P = prolongation, B = block), the combinations come out as follows.
-R + P: "I w-w-w-want the ssssssnack." The first word repeats and the second is stretched.
-R + B: "Put, put, put............... that away." or "Put, put, put. That away." The word repeats, then the speaker gets stuck with no sound.
-P + B: "Wwwwwwhere............... are you?" or "Wwwwwwhere. Are you?" The sound is held, then the speaker locks up.
-R + P + B: "I w-w-w-want............... ssssssee the airplane." or "I w-w-w-want. Ssssssee the airplane." It contains a repetition, a block, and a prolongation.
-Listen fully, never complete the users’ thoughts, analyze their prompts for repetitions, prolongations and blocks, and reply naturally.
-This awareness is silent. Never mention, comment on, or ask about the user's speech, stuttering, or the way they talk, and never express sympathy or encouragement about it. If a message contains repetitions, prolongations or blocks, quietly work out what they meant and reply only to that, like a friend who doesn't make a thing of it. You can only hear the user, so never describe how they look or seem.
+const DEFAULT_SYSTEM_PROMPT = `You are a friend in a real-time spoken voice conversation.
+Never complete the user's sentences or guess what they were about to say. Reply to what they actually said.
 Formatting Rules:
 - Always respond in the language the user had last used.
-- You must speak clearly and fluently. Do not simulate stuttering, speech blocks, repeated syllables, and elongated sounds (e.g., "s-s-sip" or "sssssip") in your own responses.
 - Absolutely no tables, no bulleted lists, no numbered lists, no markdown, no em or short dashes (—), no hyphens, no emojis, no asterisks, and no stage directions.
 - You're chatting with a friend, not writing an essay. Reply the way a relaxed, smart person would text or talk.
 - Keep replies short by default: a few sentences, and only go longer if I ask for detail.
@@ -589,6 +579,23 @@ function copyDebugText() {
   }).catch(() => {
     alert("Failed to copy logs.");
   });
+}
+
+// Tidy leftover stuttering out of a transcript before the AI sees it, so the AI never has to
+// know about (or comment on) the user's speech
+function cleanDisfluencies(text) {
+  return text
+    // Blocks: long runs of dots or ellipses become a single space
+    .replace(/\s*(?:\.{3,}|…+)\s*/g, ' ')
+    // Sound repetitions: "w-w-w-want" -> "want" (keeping a capital: "H-h-hey" -> "Hey")
+    .replace(/(^|[^\p{L}])(\p{L}{1,3})(?:-\2)*-(\2\p{L}*)/giu, (m, before, sound, word) =>
+      before + (sound[0] !== sound[0].toLowerCase() ? word[0].toUpperCase() + word.slice(1) : word))
+    // Prolongations: a letter held 4+ times -> once ("Ssssssee" -> "See"); real words have at most 3
+    .replace(/(\p{L})\1{3,}/giu, '$1')
+    // Word repetitions: "put, put, put that" -> "put that"
+    .replace(/(^|[^\p{L}])(\p{L}+)(?:[\s,.;:!?-]+\2)+(?![\p{L}])/giu, '$1$2')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 function sanitizeTextForTTS(text) {
@@ -1066,7 +1073,7 @@ async function runTurn({ audioBlob = null, typedText = '' }) {
     let sttLabel = 'Typed message';
     if (audioBlob) {
       if (logs) logs.innerHTML = `Uploading audio to ${sttProvider.toUpperCase()} STT...`;
-      userText = await transcribeAudio(audioBlob, { provider: sttProvider, key: sttKey, lang: selectedLang, mime: window.currentRecordingMime || 'audio/webm' }, signal);
+      userText = cleanDisfluencies(await transcribeAudio(audioBlob, { provider: sttProvider, key: sttKey, lang: selectedLang, mime: window.currentRecordingMime || 'audio/webm' }, signal));
       if (!userText.trim()) throw new Error(`No speech detected. Make sure the Chat Language (${selectedLang.toUpperCase()}) matches the language you're speaking.`);
       sttLabel = `STT (${sttProvider.toUpperCase()} ${selectedLang.toUpperCase()}): ${(performance.now() - t0).toFixed(0)} ms`;
       if (sttProvider === 'elevenlabs') checkSttCredits();

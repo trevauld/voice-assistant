@@ -234,7 +234,8 @@
     <li><strong>AI Engine (LLM) Provider:</strong> choose Mistral AI, Google Gemini or Groq, and paste its key.</li>
     <li><strong>Optional: Assistant Instructions.</strong> This box tells the assistant how to behave.
       <ul>
-        <li>By default, it's set up to be patient with stuttering, to never finish your sentences, and to answer briefly and naturally.</li>
+        <li>By default, it tells the assistant to talk like a relaxed friend, answer briefly, and never finish your sentences for you.</li>
+        <li>The instructions don't mention stuttering at all, and they don't need to: the app tidies up repeated sounds, repeated words, held sounds and pauses in what you said <em>before</em> the assistant sees it. The assistant simply replies to what you meant, and never has a reason to comment on how you speak.</li>
         <li>You can edit it, and your version is saved. To go back to the original, empty the box completely and click outside it. The original comes back right away.</li>
       </ul>
     </li>
@@ -307,7 +308,7 @@
 
   <h3>Other controls</h3>
   <ul>
-    <li><strong>User Prompt:</strong> what the app heard you say. Check it if a reply seems off; the transcription may have misheard you.</li>
+    <li><strong>User Prompt:</strong> what the app heard you say, tidied up, exactly as it was sent to the assistant. Check it if a reply seems off; the transcription may have misheard you.</li>
     <li><strong>Assistant Response:</strong> the text of the reply you heard.</li>
     <li><strong>Clear Memory (ESC):</strong> forgets the current conversation.</li>
     <li><strong>Enable Debug Inspector:</strong> shows technical details, like how long each step took and the full error message when something fails. Use <span class="ui">Copy Debug Logs</span> to copy them if you're reporting a problem.</li>
