@@ -44,6 +44,7 @@ Then open http://localhost:8000. Browsers only allow microphone access on `https
 | `manifest.json` | Web app manifest (name, icons, start URL) |
 | `_headers` | Security headers for Cloudflare (CSP, framing, referrer, permissions) |
 | `.assetsignore` | Files Cloudflare must not publish as part of the site |
+| `wrangler.jsonc` | Cloudflare deploy settings for the site (preview URLs are disabled so old builds don't stay online) |
 | `proxy/` | The ElevenLabs fallback proxy (a Cloudflare Worker), see below |
 
 ### Where things live in `app.js`
@@ -72,6 +73,7 @@ Checklist for a new Speech-to-Text, Text-to-Speech or AI Engine provider:
 
 - **Keep the two CSPs in sync.** The policy exists twice: the `<meta>` tag in `index.html` and `_headers`. A host missing from either blocks requests.
 - **Scripts must be external files.** The CSP forbids inline scripts and inline event handlers (`onclick=` etc.). Wire events in `app.js`.
+- **Never assign HTML strings.** The CSP enforces [Trusted Types](https://developer.mozilla.org/docs/Web/API/Trusted_Types_API), so `innerHTML` and similar throw an error in Chrome and Edge. Use `textContent`, `createElement` and `replaceChildren`. The only Trusted Types policy, `push-to-chat`, allows `sw.js` as a script URL and nothing else.
 - **Translate every new interface string.** Add each new key to all 32 languages in `translations.js`, and map element IDs in `applyUILanguage()`.
 - **Never pre-cache a URL that redirects.** Cloudflare redirects `/index.html` to `/` and `/help.html` to `/help`. Safari refuses pages served from a redirected response, so don't add such URLs to `urlsToCache` in `sw.js`. The fetch handler already turns redirected responses into plain copies.
 - **Bump the cache name in `sw.js`** (`voice-assistant-cache-vN`) when you change what it caches.
