@@ -46,6 +46,10 @@
     th { color: var(--muted); font-weight: 600; }
     .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
     .back { display: inline-block; margin-top: 36px; }
+    .speed { display: inline-block; font-size: 0.8rem; font-weight: 600; border-radius: 999px; padding: 1px 9px; margin-left: 4px; white-space: nowrap; vertical-align: 1px; }
+    .speed.fast { background: rgba(0, 200, 83, 0.15); color: #5ee08f; }
+    .speed.medium { background: rgba(124, 196, 255, 0.15); color: #9fd2ff; }
+    .speed.slow { background: rgba(255, 183, 77, 0.15); color: var(--warn); }
   </style>
 </head>
 <body>
@@ -159,25 +163,26 @@
 
   <h3>Speech providers</h3>
   <ul>
-    <li><strong>Deepgram</strong> (<a href="https://console.deepgram.com" target="_blank" rel="noopener noreferrer">console.deepgram.com</a>): in the console, open <span class="ui">API Keys</span> and create a new key.</li>
-    <li><strong>ElevenLabs</strong> (<a href="https://elevenlabs.io" target="_blank" rel="noopener noreferrer">elevenlabs.io</a>): in your account, open the developer settings, then <span class="ui">API Keys</span>, and create a key.
+    <li><strong>Deepgram</strong> <span class="speed fast">⚡ Near-instant</span> (<a href="https://console.deepgram.com" target="_blank" rel="noopener noreferrer">console.deepgram.com</a>): in the console, open <span class="ui">API Keys</span> and create a new key.</li>
+    <li><strong>ElevenLabs</strong> <span class="speed medium">Fast, a bit slower than Deepgram</span> (<a href="https://elevenlabs.io" target="_blank" rel="noopener noreferrer">elevenlabs.io</a>): in your account, open the developer settings, then <span class="ui">API Keys</span>, and create a key.
       <ul>
         <li>If you restrict the key's permissions, allow <strong>Text to Speech</strong>, <strong>Speech to Text</strong>, and <strong>read access to User</strong>. The app needs the last one to show your credit balance.</li>
         <li>You can also set a credit limit on the key, which is a good safety net.</li>
       </ul>
     </li>
-    <li><strong>Cartesia</strong> (<a href="https://play.cartesia.ai" target="_blank" rel="noopener noreferrer">play.cartesia.ai</a>): open <span class="ui">API Keys</span> and create a new key.</li>
+    <li><strong>Cartesia</strong> <span class="speed fast">⚡ Near-instant</span> (<a href="https://play.cartesia.ai" target="_blank" rel="noopener noreferrer">play.cartesia.ai</a>): open <span class="ui">API Keys</span> and create a new key.</li>
   </ul>
 
   <h3>AI Engine providers</h3>
   <ul>
-    <li><strong>Google Gemini</strong> (<a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">aistudio.google.com/apikey</a>): click <span class="ui">Create API key</span>.</li>
-    <li><strong>Groq</strong> (<a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer">console.groq.com/keys</a>): click <span class="ui">Create API Key</span>.</li>
-    <li><strong>Mistral AI</strong> (<a href="https://console.mistral.ai" target="_blank" rel="noopener noreferrer">console.mistral.ai</a>): open <span class="ui">API Keys</span> and create a new key. Choose the free <span class="ui">Experiment</span> plan and verify your phone number. On the free plan, Mistral may use your conversations to improve its models; you can opt out in its privacy settings.</li>
+    <li><strong>Google Gemini</strong> <span class="speed slow">Can be slow at busy times</span> (<a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">aistudio.google.com/apikey</a>): click <span class="ui">Create API key</span>.
+      <ul>
+        <li>Demand for Google's models is very high, so replies can sometimes take a while to arrive. If you don't get an answer right away, the app isn't broken: it's waiting on Google. For consistently quick replies, use Groq or Mistral AI.</li>
+      </ul>
+    </li>
+    <li><strong>Groq</strong> <span class="speed fast">⚡ Near-instant</span> (<a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer">console.groq.com/keys</a>): click <span class="ui">Create API Key</span>.</li>
+    <li><strong>Mistral AI</strong> <span class="speed fast">⚡ Near-instant</span> (<a href="https://console.mistral.ai" target="_blank" rel="noopener noreferrer">console.mistral.ai</a>): open <span class="ui">API Keys</span> and create a new key. Choose the free <span class="ui">Experiment</span> plan and verify your phone number. On the free plan, Mistral may use your conversations to improve its models; you can opt out in its privacy settings.</li>
   </ul>
-  <div class="tip">
-    <p><strong>Tip:</strong> most providers let you set a monthly spending limit. Setting one protects you from surprise bills.</p>
-  </div>
 
   <!-- 5 -->
   <h2 id="setup">5. Set up the app, step by step</h2>
@@ -224,7 +229,7 @@
     <li>The first time, your browser asks for permission to use the microphone. Tap <span class="ui">Allow</span>.</li>
     <li>The box turns to <span class="ui">RECORDING...</span>. Speak at your own pace. There's no time limit and nothing will interrupt you.</li>
     <li>When you've finished, tap the box again to send.</li>
-    <li>The box shows <span class="ui">PROCESSING...</span> for a few seconds while your speech is transcribed and a reply is written.</li>
+    <li>The box shows <span class="ui">PROCESSING...</span> while your speech is transcribed and a reply is written. This usually takes a moment. With Google Gemini it can take longer at busy times, because the app is waiting on Google.</li>
     <li>The box shows <span class="ui">AI SPEAKING...</span> and you hear the reply. Your words appear under <em>User Prompt</em> and the reply under <em>Assistant Response</em>.</li>
     <li>When the reply ends, the box returns to <span class="ui">READY</span>. Tap it to answer.</li>
   </ol>
@@ -357,6 +362,14 @@
     <li>If it's tagged (e.g. <em>· ElevenLabs, Cartesia</em>), the app may switch providers; make sure the new provider has a key.</li>
     <li>Speak again.</li>
   </ol>
+
+  <h3>Replies take a long time (PROCESSING stays on screen)</h3>
+  <ul>
+    <li><strong>Using Google Gemini?</strong> This is the most common cause. Google's models are in very high demand, so replies can be slow at busy times. The app isn't broken; it's waiting for Google to answer. Wait a little longer, or switch the AI Engine to Groq or Mistral AI, which usually reply almost instantly.</li>
+    <li>With ElevenLabs, listening and speaking take slightly longer than with Deepgram or Cartesia. That's normal.</li>
+    <li>A slow or unstable internet connection also slows every step.</li>
+    <li>To see which step is slow, tick <span class="ui">Enable Debug Inspector</span>. It shows how long each step took.</li>
+  </ul>
 
   <h3>I don't hear the reply</h3>
   <ul>
