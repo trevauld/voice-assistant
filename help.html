@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; base-uri 'none'; form-action 'none'; object-src 'none'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#181818">
+  <link rel="apple-touch-icon" href="assets/icon-192.png">
+  <title>Voice Assistant User Guide</title>
+  <style>
+    :root {
+      --bg: #121212; --panel: #1b1b1b; --panel-2: #222; --line: rgba(255,255,255,0.1);
+      --text: #f2f2f2; --muted: #a8a8a8; --accent: #00c853; --warn: #ffb74d; --bad: #ff4d4d; --ok: #00ff66;
+    }
+    * { box-sizing: border-box; }
+    html { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; }
+    body { margin: 0; padding: 24px 16px 64px; }
+    main { max-width: 760px; margin: 0 auto; }
+    a { color: #7cc4ff; }
+    header.top { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
+    header.top img { width: 52px; height: 52px; border-radius: 12px; }
+    h1 { font-size: 1.7rem; margin: 0; line-height: 1.2; }
+    .lead { color: var(--muted); margin: 8px 0 24px; }
+    h2 { font-size: 1.3rem; margin: 44px 0 12px; padding-top: 16px; border-top: 1px solid var(--line); scroll-margin-top: 16px; }
+    h3 { font-size: 1.05rem; margin: 26px 0 8px; scroll-margin-top: 16px; }
+    p, li { font-size: 0.98rem; }
+    ol, ul { padding-left: 1.4em; }
+    li { margin: 6px 0; }
+    li > ul, li > ol { margin: 6px 0; }
+    code, kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.88em; }
+    kbd { background: var(--panel-2); border: 1px solid #444; border-bottom-width: 2px; border-radius: 5px; padding: 1px 6px; white-space: nowrap; }
+    .ui { background: var(--panel-2); border: 1px solid #3a3a3a; border-radius: 5px; padding: 1px 6px; font-size: 0.92em; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+    .toc { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; }
+    .toc ol { margin: 0; }
+    .toc li { margin: 3px 0; }
+    .note, .tip, .warn { border-radius: 10px; padding: 12px 14px; margin: 14px 0; border: 1px solid var(--line); background: var(--panel); }
+    .tip { border-left: 4px solid var(--accent); }
+    .note { border-left: 4px solid #7cc4ff; }
+    .warn { border-left: 4px solid var(--warn); }
+    .note p, .tip p, .warn p { margin: 0 0 6px; }
+    .note p:last-child, .tip p:last-child, .warn p:last-child { margin: 0; }
+    .table-wrap { overflow-x: auto; margin: 12px 0; }
+    table { border-collapse: collapse; width: 100%; font-size: 0.93rem; }
+    th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { color: var(--muted); font-weight: 600; }
+    .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+    .back { display: inline-block; margin-top: 36px; }
+  </style>
+</head>
+<body>
+<main>
+
+  <header class="top">
+    <img src="assets/icon-192.png" alt="">
+    <h1>Voice Assistant User Guide</h1>
+  </header>
+  <p class="lead">Voice Assistant is a voice chat app that's patient with stuttering. You speak, it listens without rushing you or finishing your sentences, and it answers out loud like a friend. This guide walks you through everything, from getting your keys to your first conversation.</p>
+
+  <nav class="toc" aria-label="Contents">
+    <strong>Contents</strong>
+    <ol>
+      <li><a href="#how-it-works">How it works</a></li>
+      <li><a href="#what-you-need">What you need</a></li>
+      <li><a href="#open">Open and install the app</a></li>
+      <li><a href="#keys">Get your API keys</a></li>
+      <li><a href="#setup">Set up the app, step by step</a></li>
+      <li><a href="#talk">Have a conversation</a></li>
+      <li><a href="#screen">Everything on the screen</a></li>
+      <li><a href="#languages">Languages</a></li>
+      <li><a href="#privacy">Privacy and your keys</a></li>
+      <li><a href="#troubleshooting">Troubleshooting</a></li>
+    </ol>
+  </nav>
+
+  <!-- 1 -->
+  <h2 id="how-it-works">1. How it works</h2>
+  <p>Every time you talk, three services work together, one after the other:</p>
+  <ol>
+    <li><strong>Speech-to-Text</strong> turns your voice into text.</li>
+    <li><strong>The AI Engine</strong> reads that text and writes a reply.</li>
+    <li><strong>Text-to-Speech</strong> reads the reply to you out loud.</li>
+  </ol>
+  <p>You choose which company does each step and connect your own account with an <strong>API key</strong>, a password-like code the company gives you. This is called "bring your own key". You pay those companies directly (many offer free credits or free tiers to start), and the app itself is free.</p>
+
+  <!-- 2 -->
+  <h2 id="what-you-need">2. What you need</h2>
+  <ul>
+    <li><strong>A device with a microphone and speakers:</strong> a phone, tablet or computer. Headphones help in noisy places.</li>
+    <li><strong>A modern browser:</strong> Safari, Chrome, Edge or Firefox.</li>
+    <li><strong>An internet connection.</strong></li>
+    <li><strong>Three API keys</strong>, one for each step. Section 4 shows how to get them:
+      <ul>
+        <li>one <strong>Speech-to-Text</strong> key: Deepgram, ElevenLabs or Cartesia</li>
+        <li>one <strong>Text-to-Speech</strong> key: Deepgram, ElevenLabs or Cartesia</li>
+        <li>one <strong>AI Engine</strong> key: Mistral AI, Google Gemini or Groq</li>
+      </ul>
+    </li>
+  </ul>
+  <div class="tip">
+    <p><strong>Tip: you may only need two accounts.</strong> The same company can handle Speech-to-Text and Text-to-Speech. For example, one Cartesia account covers both, plus one AI Engine account.</p>
+  </div>
+
+  <h3>Which providers should I pick?</h3>
+  <div class="table-wrap">
+    <table>
+      <tr><th>If you want…</th><th>Speech-to-Text</th><th>Text-to-Speech</th></tr>
+      <tr><td>The fewest accounts, any of 32 languages</td><td>Cartesia</td><td>Cartesia</td></tr>
+      <tr><td>The fewest accounts, any of 32 languages, with a credit balance shown in the app</td><td>ElevenLabs</td><td>ElevenLabs</td></tr>
+      <tr><td>Low-cost listening plus a very natural voice (English, Spanish, French, German, Italian only)</td><td>Deepgram</td><td>ElevenLabs or Cartesia</td></tr>
+      <tr><td>Deepgram for everything (English, Spanish, French, German, Italian only)</td><td>Deepgram</td><td>Deepgram</td></tr>
+    </table>
+  </div>
+  <p>For the AI Engine, any of the three works well. Pick the one you already have an account with, or try Google Gemini or Groq first.</p>
+
+  <!-- 3 -->
+  <h2 id="open">3. Open and install the app</h2>
+  <ol>
+    <li>Open <a href="https://push-to-chat.keremk.workers.dev/">push-to-chat.keremk.workers.dev</a> in your browser.</li>
+    <li>Optional but recommended: <strong>add it to your home screen</strong> so it opens like a regular app.
+      <ul>
+        <li><strong>iPhone / iPad (Safari):</strong> tap the <span class="ui">Share</span> button (the square with an arrow), scroll down, tap <span class="ui">Add to Home Screen</span>, then <span class="ui">Add</span>.</li>
+        <li><strong>Android (Chrome):</strong> tap the <span class="ui">⋮</span> menu, then <span class="ui">Add to Home screen</span> or <span class="ui">Install app</span>.</li>
+        <li><strong>Computer (Chrome or Edge):</strong> click the install icon at the right end of the address bar, then <span class="ui">Install</span>.</li>
+      </ul>
+    </li>
+  </ol>
+  <div class="note">
+    <p><strong>Used the old address?</strong> The app used to live at <code>trevauld.github.io/voice-assistant</code>. That address no longer works. Use the address above, and enter your keys again there. If you had the old one on your home screen, remove that icon and add the new one.</p>
+  </div>
+
+  <!-- 4 -->
+  <h2 id="keys">4. Get your API keys</h2>
+  <p>For each provider you chose: sign up, find the <strong>API Keys</strong> section of your account, create a key, and copy it. Keep the page open until you've pasted the key into the app, because some providers only show a new key once.</p>
+  <div class="warn">
+    <p><strong>Treat API keys like passwords.</strong> Anyone with your key can use your account. Never post a key online or send it in a message. If one leaks, delete it in the provider's dashboard and make a new one.</p>
+  </div>
+
+  <h3>Speech providers</h3>
+  <ul>
+    <li><strong>Deepgram</strong> (<a href="https://console.deepgram.com" target="_blank" rel="noopener noreferrer">console.deepgram.com</a>): in the console, open <span class="ui">API Keys</span> and create a new key.</li>
+    <li><strong>ElevenLabs</strong> (<a href="https://elevenlabs.io" target="_blank" rel="noopener noreferrer">elevenlabs.io</a>): in your account, open the developer settings, then <span class="ui">API Keys</span>, and create a key.
+      <ul>
+        <li>If you restrict the key's permissions, allow <strong>Text to Speech</strong>, <strong>Speech to Text</strong>, and <strong>read access to User</strong>. The app needs the last one to show your credit balance.</li>
+        <li>You can also set a credit limit on the key, which is a good safety net.</li>
+      </ul>
+    </li>
+    <li><strong>Cartesia</strong> (<a href="https://play.cartesia.ai" target="_blank" rel="noopener noreferrer">play.cartesia.ai</a>): open <span class="ui">API Keys</span> and create a new key.</li>
+  </ul>
+
+  <h3>AI Engine providers</h3>
+  <ul>
+    <li><strong>Google Gemini</strong> (<a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">aistudio.google.com/apikey</a>): click <span class="ui">Create API key</span>.</li>
+    <li><strong>Groq</strong> (<a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer">console.groq.com/keys</a>): click <span class="ui">Create API Key</span>.</li>
+    <li><strong>Mistral AI</strong> (<a href="https://console.mistral.ai" target="_blank" rel="noopener noreferrer">console.mistral.ai</a>): open <span class="ui">API Keys</span> and create a new key. Mistral may ask you to choose a plan first.</li>
+  </ul>
+  <div class="tip">
+    <p><strong>Tip:</strong> most providers let you set a monthly spending limit. Setting one protects you from surprise bills.</p>
+  </div>
+
+  <!-- 5 -->
+  <h2 id="setup">5. Set up the app, step by step</h2>
+  <p>You only do this once per device. The app remembers everything you enter.</p>
+  <ol>
+    <li><strong>UI Language</strong> (top left, top of the screen on phones): choose the language for the app's buttons and labels. This doesn't change the language you talk in.</li>
+    <li><strong>Chat Language</strong> (next to it): choose the language you'll <em>speak</em>.
+      <ul>
+        <li>Some languages are tagged with provider names, like <em>Japanese · ElevenLabs, Cartesia</em>. Only those providers support them.</li>
+        <li>If you pick one, the app switches your providers automatically when needed. See <a href="#languages">Languages</a>.</li>
+      </ul>
+    </li>
+    <li><strong>Speech-to-Text Provider:</strong> choose Deepgram, ElevenLabs or Cartesia, then paste that provider's key into the box next to it.
+      <ul>
+        <li>After a moment, a line appears under the box. <span class="dot" style="background: var(--ok)"></span>Green means the key works.</li>
+        <li>See <a href="#badges">key status messages</a> for what the other colors mean.</li>
+      </ul>
+    </li>
+    <li><strong>Text-to-Speech Provider:</strong> choose a provider and paste its key.
+      <ul>
+        <li>If it's the same provider as Speech-to-Text, the key is usually filled in for you.</li>
+      </ul>
+    </li>
+    <li><strong>Assistant Voice Persona:</strong> choose the voice you'll hear.
+      <ul>
+        <li>With <strong>Cartesia</strong>, the list shows native voices for your chat language once your key is entered.</li>
+      </ul>
+    </li>
+    <li><strong>AI Engine (LLM) Provider:</strong> choose Mistral AI, Google Gemini or Groq, and paste its key.</li>
+    <li><strong>Optional: Voice Assistant Instructions.</strong> This box tells the assistant how to behave.
+      <ul>
+        <li>By default, it's set up to be patient with stuttering, to never finish your sentences, and to answer briefly and naturally.</li>
+        <li>You can edit it, and your version is saved. To go back to the original, empty the box completely and click outside it. The original comes back right away.</li>
+      </ul>
+    </li>
+  </ol>
+  <p>When all three key lines are green, you're ready.</p>
+
+  <!-- 6 -->
+  <h2 id="talk">6. Have a conversation</h2>
+  <h3>On a phone or tablet</h3>
+  <ol>
+    <li>Tap the large status box that says <span class="ui">READY</span>.</li>
+    <li>The first time, your browser asks for permission to use the microphone. Tap <span class="ui">Allow</span>.</li>
+    <li>The box turns to <span class="ui">RECORDING...</span>. Speak at your own pace. There's no time limit and nothing will interrupt you.</li>
+    <li>When you've finished, tap the box again to send.</li>
+    <li>The box shows <span class="ui">PROCESSING...</span> for a few seconds while your speech is transcribed and a reply is written.</li>
+    <li>The box shows <span class="ui">AI SPEAKING...</span> and you hear the reply. Your words appear under <em>User Prompt</em> and the reply under <em>Voice Assistant Response</em>.</li>
+    <li>When the reply ends, the box returns to <span class="ui">READY</span>. Tap it to answer.</li>
+  </ol>
+  <p>To stop a reply early, tap the box while it's speaking. It goes straight back to <span class="ui">READY</span>.</p>
+
+  <h3>On a computer (keyboard)</h3>
+  <div class="table-wrap">
+    <table>
+      <tr><th>Key</th><th>What it does</th></tr>
+      <tr><td><kbd>Space</kbd></td><td>Start recording. While the assistant is speaking or thinking, it cuts the reply off and starts recording right away.</td></tr>
+      <tr><td><kbd>Enter</kbd></td><td>Stop recording and send.</td></tr>
+      <tr><td><kbd>Esc</kbd></td><td>Clear the conversation memory (start fresh).</td></tr>
+    </table>
+  </div>
+  <p>You can also click the status box, just like tapping on a phone. <kbd>Space</kbd> and <kbd>Enter</kbd> don't work while you're typing in a text box, so click an empty part of the page first. <kbd>Esc</kbd> works anywhere.</p>
+
+  <h3>Conversation memory</h3>
+  <ul>
+    <li>The assistant remembers your last few exchanges (about four back-and-forths), so you can refer to what you just said.</li>
+    <li>To start a brand-new conversation, press <kbd>Esc</kbd> or tap <span class="ui">Clear Memory</span> inside the status box.</li>
+    <li>The memory is also cleared when you close or reload the app.</li>
+  </ul>
+
+  <!-- 7 -->
+  <h2 id="screen">7. Everything on the screen</h2>
+  <h3>The status box</h3>
+  <div class="table-wrap">
+    <table>
+      <tr><th>Shows</th><th>Meaning</th><th>Tap or click it to…</th></tr>
+      <tr><td><span class="ui">READY</span></td><td>Waiting for you</td><td>Start recording</td></tr>
+      <tr><td><span class="ui">RECORDING...</span></td><td>Listening to you</td><td>Send what you said</td></tr>
+      <tr><td><span class="ui">PROCESSING...</span></td><td>Transcribing and writing a reply</td><td>Nothing (wait a moment, or press <kbd>Space</kbd> to cancel and speak again)</td></tr>
+      <tr><td><span class="ui">AI SPEAKING...</span></td><td>Playing the reply</td><td>Stop the reply</td></tr>
+      <tr><td><span class="ui">ERROR</span></td><td>Something went wrong; returns to READY after 3 seconds</td><td>See <a href="#troubleshooting">Troubleshooting</a></td></tr>
+    </table>
+  </div>
+
+  <h3 id="badges">Key status messages</h3>
+  <p>The small line under each key box tells you whether that key works:</p>
+  <div class="table-wrap">
+    <table>
+      <tr><th>Message</th><th>Meaning</th></tr>
+      <tr><td><span class="dot" style="background: #888"></span>Enter an API key for the selected model</td><td>No key has been entered for this provider yet.</td></tr>
+      <tr><td><span class="dot" style="background: var(--ok)"></span>Credits available</td><td>The key works. For Deepgram, Cartesia and the AI Engines, this confirms the key is valid. It doesn't show a balance.</td></tr>
+      <tr><td><span class="dot" style="background: var(--ok)"></span>Credits: 2,879 / 10,000 chars left</td><td>ElevenLabs only: the key works, and this is your remaining character balance for the month.</td></tr>
+      <tr><td><span class="dot" style="background: var(--bad)"></span>No credits available</td><td>The key didn't work: it may be mistyped, deleted, out of credits, or missing a permission. See <a href="#troubleshooting">Troubleshooting</a>.</td></tr>
+    </table>
+  </div>
+
+  <h3>Other controls</h3>
+  <ul>
+    <li><strong>User Prompt:</strong> what the app heard you say. Check it if a reply seems off; the transcription may have misheard you.</li>
+    <li><strong>Voice Assistant Response:</strong> the text of the reply you heard.</li>
+    <li><strong>Clear Memory (ESC):</strong> forgets the current conversation.</li>
+    <li><strong>Enable Debug Inspector:</strong> shows technical details, like how long each step took and the full error message when something fails. Use <span class="ui">Copy Debug Logs</span> to copy them if you're reporting a problem.</li>
+    <li><strong>Help</strong> (bottom of the app): opens this guide.</li>
+  </ul>
+  <p>Each section with a small arrow (▼) can be collapsed by tapping its title, to keep the screen tidy.</p>
+
+  <!-- 8 -->
+  <h2 id="languages">8. Languages</h2>
+  <ul>
+    <li><strong>32 chat languages</strong> are available.</li>
+    <li><strong>English, Spanish, French, German and Italian</strong> work with every provider, so you can mix and match freely (e.g. Deepgram listening with an ElevenLabs voice).</li>
+    <li><strong>All other languages</strong> work with ElevenLabs and Cartesia only, and are tagged with those names in the list.</li>
+  </ul>
+  <p>What happens when you choose a tagged language:</p>
+  <ol>
+    <li>If Speech-to-Text or Text-to-Speech is set to a provider that can't handle it, that side switches automatically.</li>
+    <li>The app prefers the provider your other side already uses, then one you've already saved a key for, then ElevenLabs.</li>
+    <li>If the new provider has no key yet, its key line says <em>Enter an API key</em>. Paste one to continue.</li>
+  </ol>
+  <p>If you later switch a side back to Deepgram while a tagged language is selected, the chat language resets to English.</p>
+  <div class="note">
+    <p><strong>What language will the assistant answer in?</strong> The assistant replies in the language you last spoke. Set the Chat Language to the language you actually speak, because it tells the transcription service what to listen for.</p>
+  </div>
+
+  <!-- 9 -->
+  <h2 id="privacy">9. Privacy and your keys</h2>
+  <ul>
+    <li><strong>Your keys stay on your device.</strong> They're saved in your browser's storage on this device only. They're never sent to the app's owner or stored on any server.</li>
+    <li><strong>Each key goes only to its own provider.</strong> Your Deepgram key goes only to Deepgram, your Gemini key only to Google, and so on.</li>
+    <li><strong>One exception for ElevenLabs:</strong> if an ad or tracker blocker in your browser blocks ElevenLabs, the app automatically sends ElevenLabs requests through a small relay. The relay passes them straight through and stores nothing. Its source code is public.</li>
+    <li><strong>Your voice recordings and conversations</strong> are sent only to the providers you picked, to be processed. The app doesn't keep them after you close it.</li>
+    <li><strong>On a shared computer,</strong> remove your keys when you're done: clear each key box, or delete the site's data in your browser settings.</li>
+    <li><strong>Clearing your browser data</strong> for this site deletes your saved keys and settings. Keep your keys somewhere safe (for example, a password manager) so you can paste them in again.</li>
+  </ul>
+
+  <!-- 10 -->
+  <h2 id="troubleshooting">10. Troubleshooting</h2>
+
+  <h3>A key says "No credits available"</h3>
+  <ol>
+    <li>Paste the key again. Make sure you copied all of it, with no extra spaces.</li>
+    <li>Check that the right provider is selected for that key.</li>
+    <li>Log in to the provider's dashboard and check the key still exists and your account has credit.</li>
+    <li><strong>ElevenLabs:</strong> if you restricted the key, make sure it has Text to Speech, Speech to Text, and read access to User.</li>
+    <li>Still red? Create a new key and try that.</li>
+  </ol>
+
+  <h3>Nothing happens when I tap READY, or I see "Microphone access denied"</h3>
+  <p>The browser isn't allowed to use your microphone. Turn it back on:</p>
+  <ul>
+    <li><strong>iPhone / iPad:</strong> open <span class="ui">Settings → Apps → Safari → Microphone</span> (on older iOS: <span class="ui">Settings → Safari → Microphone</span>) and choose <span class="ui">Ask</span> or <span class="ui">Allow</span>, then reopen the app.</li>
+    <li><strong>Chrome or Edge:</strong> click the icon at the left of the address bar, set <span class="ui">Microphone</span> to <span class="ui">Allow</span>, then reload.</li>
+    <li><strong>Firefox:</strong> click the microphone or lock icon in the address bar and remove the block, then reload.</li>
+  </ul>
+  <p>Also make sure your Speech-to-Text and AI Engine keys are entered. The app won't start recording without them.</p>
+
+  <h3>The status box shows ERROR</h3>
+  <ol>
+    <li>Tick <span class="ui">Enable Debug Inspector</span> at the bottom of the app and try again.</li>
+    <li>Read the message in the inspector. It names the step that failed (Speech-to-Text, AI Engine or Text-to-Speech) and the provider's reason.</li>
+    <li>Common causes:
+      <ul>
+        <li>An invalid or expired key</li>
+        <li>An account that's out of credit</li>
+        <li><em>"No speech detected"</em>: nothing was heard, so speak a little louder or closer to the microphone</li>
+        <li>A <em>rate limit</em> (too many requests too quickly): wait a minute and try again</li>
+      </ul>
+    </li>
+  </ol>
+
+  <h3>I don't hear the reply</h3>
+  <ul>
+    <li>Turn up your device's volume, and check that it's not connected to another speaker or headphones.</li>
+    <li>Make sure the Text-to-Speech key line is green, and that a voice is selected.</li>
+  </ul>
+
+  <h3>It misunderstands what I say</h3>
+  <ul>
+    <li>Check the Chat Language matches the language you're speaking.</li>
+    <li>Try a different Speech-to-Text provider. Each handles accents and speech patterns a little differently.</li>
+    <li>A quieter room or a headset microphone helps a lot.</li>
+  </ul>
+
+  <h3>iPhone: "Safari cannot open the page… served by service worker has redirections"</h3>
+  <p>This came from an older version of the app. To fix it, open <a href="https://push-to-chat.keremk.workers.dev/">push-to-chat.keremk.workers.dev</a> once in the Safari app itself, not the home-screen icon. Then close the tab and open the home-screen app again.</p>
+  <ul>
+    <li>If that doesn't work, go to <span class="ui">Settings → Apps → Safari → Advanced → Website Data</span> and delete <code>push-to-chat.keremk.workers.dev</code>. This also deletes your saved keys on that device, so paste them in again afterwards.</li>
+  </ul>
+
+  <h3>Where do I see which version I have?</h3>
+  <p>The version number is at the bottom left of the app. The app updates itself: when a new version comes out, reopen or reload the app once or twice to get it.</p>
+
+  <a class="back" href="./">← Back to the app</a>
+</main>
+</body>
+</html>

@@ -415,8 +415,11 @@ async function loadCartesiaVoices(key, lang) {
 function saveSettings() {
   localStorage.setItem('selected_language', document.getElementById('selectedLanguage').value);
   localStorage.setItem('tts_voice', document.getElementById('ttsVoice').value);
-  // Only persist customized instructions, so users on the default keep receiving updates to it
-  const prompt = document.getElementById('systemPrompt').value;
+  // Only persist customized instructions, so users on the default keep receiving updates to it;
+  // an emptied box goes back to the default instead of leaving the assistant with no instructions
+  const promptBox = document.getElementById('systemPrompt');
+  if (!promptBox.value.trim()) promptBox.value = DEFAULT_SYSTEM_PROMPT;
+  const prompt = promptBox.value;
   if (prompt.trim() && prompt !== DEFAULT_SYSTEM_PROMPT) {
     localStorage.setItem('system_prompt', prompt);
   } else {
@@ -1073,7 +1076,8 @@ function applyUILanguage() {
     'sum-ai': t.ai, 
     'btn-clear': t.clear, 
     'lbl-debug': t.debug,
-    'lbl-license': t.licenseText || 'AGPLv3 License'
+    'lbl-license': t.licenseText || 'AGPLv3 License',
+    'lbl-help': t.helpText || 'Help'
   };
   for (const [id, text] of Object.entries(map)) {
     const el = document.getElementById(id);
