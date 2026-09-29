@@ -16,14 +16,6 @@ const PROVIDER_PRESETS = {
     baseUrl: 'https://generativelanguage.googleapis.com/v1beta/models',
     model: 'gemini-3.5-flash'
   },
-  cerebras: {
-    name: 'Cerebras',
-    baseUrl: 'https://api.cerebras.ai/v1/chat/completions',
-    models: [
-      'gpt-oss-120b',
-      'qwen-3.8-27b'
-    ]
-  },
   groq: {
     name: 'Groq',
     baseUrl: 'https://api.groq.com/openai/v1/chat/completions',
@@ -175,7 +167,12 @@ function setSavedKey(type, provider, val) {
 document.addEventListener('DOMContentLoaded', () => {
   const sttProvider = localStorage.getItem('stt_provider') || 'deepgram';
   const ttsProvider = localStorage.getItem('tts_provider') || 'deepgram';
-  const llmProvider = localStorage.getItem('llm_provider') || 'mistral';
+  // Saved providers that are no longer offered fall back to the defaults (Cerebras was removed: it needs a card)
+  localStorage.removeItem('llm_key_cerebras');
+  const offered = (id, value) => [...document.getElementById(id).options].some(o => o.value === value);
+  const savedLlm = localStorage.getItem('llm_provider');
+  const llmProvider = offered('llmProvider', savedLlm) ? savedLlm : 'mistral';
+  localStorage.setItem('llm_provider', llmProvider);
 
   document.getElementById('sttProvider').value = sttProvider;
   document.getElementById('ttsProvider').value = ttsProvider;
@@ -558,9 +555,6 @@ async function checkLlmCredits() {
     } else if (provider === 'groq') {
       url = 'https://api.groq.com/openai/v1/models';
       headers = { 'Authorization': `Bearer ${llmKey}` };
-    } else if (provider === 'cerebras') {
-      url = 'https://api.cerebras.ai/v1/models';
-      headers = { 'Authorization': `Bearer ${llmKey}` };
     } else if (provider === 'mistral') {
       url = 'https://api.mistral.ai/v1/models';
       headers = { 'Authorization': `Bearer ${llmKey}` };
@@ -773,9 +767,7 @@ async function streamSelectedLLM(systemPrompt, history, signal, onDelta = () => 
         body: JSON.stringify({
           model: targetModel, messages, stream: true, max_tokens: 450, temperature: 0.7,
           // Qwen on Groq is a reasoning model; keep its thinking out of the reply that gets spoken
-          ...(provider === 'groq' && targetModel.startsWith('qwen/') && { reasoning_format: 'hidden' }),
-          // gpt-oss on Cerebras counts its reasoning against max_tokens; keep it short so the answer fits
-          ...(provider === 'cerebras' && targetModel.startsWith('gpt-oss') && { reasoning_effort: 'low' })
+          ...(provider === 'groq' && targetModel.startsWith('qwen/') && { reasoning_format: 'hidden' })
         }),
         signal
       });
