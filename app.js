@@ -127,7 +127,7 @@ let conversationHistory = [];
 const DEFAULT_SYSTEM_PROMPT = `You are a friend in a real-time spoken voice conversation.
 Never complete the user's sentences or guess what they were about to say. Reply to what they actually said.
 Formatting Rules:
-- Always respond in the language the user had last used.
+- Always reply in the language named at the end of these instructions.
 - Absolutely no tables, no bulleted lists, no numbered lists, no markdown, no em or short dashes (—), no hyphens, no emojis, no asterisks, and no stage directions.
 - You're chatting with a friend, not writing an essay. Reply the way a relaxed, smart person would text or talk.
 - Keep replies short by default: a few sentences, and only go longer if I ask for detail.
@@ -1054,7 +1054,10 @@ async function runTurn({ audioBlob = null, typedText = '' }) {
   const selectedLang = document.getElementById('selectedLanguage').value || 'en';
   const selectedVoiceTag = document.getElementById('ttsVoice').value;
   const rawSystemPrompt = document.getElementById('systemPrompt').value;
-  const effectiveSystemPrompt = `${rawSystemPrompt}\n\nCRITICAL LANGUAGE DIRECTIVE: Detect the language of the user's LATEST message and respond strictly in that exact same language, regardless of any earlier conversation history.`;
+  // The Chat Language is known (speech-to-text only listens for it), so name it instead of asking
+  // the model to guess; small models guess wrong on short or mixed-language conversations
+  const languageName = (SUPPORTED_LANGUAGES.elevenlabs.find(l => l.code === selectedLang) || { name: 'English' }).name;
+  const effectiveSystemPrompt = `${rawSystemPrompt}\n\nCRITICAL LANGUAGE DIRECTIVE: The user is speaking ${languageName}. Always reply in ${languageName} only, even if earlier messages in the conversation were in another language.`;
 
   const logs = document.getElementById('debugLogs');
   const rawLogEl = document.getElementById('geminiRawLog');
@@ -1120,7 +1123,7 @@ async function runTurn({ audioBlob = null, typedText = '' }) {
 
     if (rawLogEl) {
       const providerName = PROVIDER_PRESETS[document.getElementById('llmProvider').value].name;
-      rawLogEl.innerText = `[DEBUG INSPECTOR]\nProvider: ${providerName}\nModel ID: ${llm.model}\nHTTP Status: ${llm.status} OK\nLanguage Directive: Dynamic (Matches Latest User Prompt)\nTime to First Token (TTFT): ${llm.ttft} ms\nTotal LLM Latency: ${llm.totalTime} ms\nVoice Tag: ${selectedVoiceTag}\n\n--- RAW AI RESPONSE ---\n"${llm.text}"\n\n--- SANITIZED FOR TTS ---\n"${cleanAiText}"`;
+      rawLogEl.innerText = `[DEBUG INSPECTOR]\nProvider: ${providerName}\nModel ID: ${llm.model}\nHTTP Status: ${llm.status} OK\nReply Language: ${languageName}\nUser Prompt: "${userText}"\nTime to First Token (TTFT): ${llm.ttft} ms\nTotal LLM Latency: ${llm.totalTime} ms\nVoice Tag: ${selectedVoiceTag}\n\n--- RAW AI RESPONSE ---\n"${llm.text}"\n\n--- SANITIZED FOR TTS ---\n"${cleanAiText}"`;
     }
     if (logs) logs.innerHTML = `${sttLabel}<br>LLM (${llm.model}): ${llm.totalTime} ms (TTFT: ${llm.ttft} ms)<br>Speaking...`;
 
