@@ -297,8 +297,10 @@
     <li>If the new provider has no key yet, its key line says <em>Enter an API key</em>. Paste one to continue.</li>
   </ol>
   <p>If you later switch a side back to Deepgram while a tagged language is selected, the chat language resets to English.</p>
-  <div class="note">
-    <p><strong>What language will the assistant answer in?</strong> The assistant replies in the language you last spoke. Set the Chat Language to the language you actually speak, because it tells the transcription service what to listen for.</p>
+  <div class="warn">
+    <p><strong>Always speak the language selected as Chat Language.</strong> The Chat Language tells the Speech-to-Text service which language to listen for, and it only listens for that one.</p>
+    <p>If you speak a different language (for example, Mandarin while the Chat Language is English), the app can't understand you. You'll either get an <span class="ui">ERROR</span> saying no speech was detected, or a transcription that makes no sense.</p>
+    <p>To switch languages, change the Chat Language first, then speak. The assistant answers in the language you speak.</p>
   </div>
 
   <!-- 9 -->
@@ -341,10 +343,18 @@
       <ul>
         <li>An invalid or expired key</li>
         <li>An account that's out of credit</li>
-        <li><em>"No speech detected"</em>: nothing was heard, so speak a little louder or closer to the microphone</li>
+        <li><em>"No speech detected"</em>: either nothing was heard (speak a little louder or closer to the microphone), or you spoke a different language than the Chat Language. See below.</li>
         <li>A <em>rate limit</em> (too many requests too quickly): wait a minute and try again</li>
       </ul>
     </li>
+  </ol>
+
+  <h3>I spoke another language and got an ERROR or a strange transcription</h3>
+  <p>The Speech-to-Text service only listens for the language selected as <strong>Chat Language</strong>. Speaking any other language, even a few words, can make it fail with <em>"No speech detected"</em> or turn your words into nonsense.</p>
+  <ol>
+    <li>Change the <strong>Chat Language</strong> to the language you want to speak.</li>
+    <li>If it's tagged (e.g. <em>· ElevenLabs, Cartesia</em>), the app may switch providers; make sure the new provider has a key.</li>
+    <li>Speak again.</li>
   </ol>
 
   <h3>I don't hear the reply</h3>

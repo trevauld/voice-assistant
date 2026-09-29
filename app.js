@@ -22,8 +22,7 @@ const PROVIDER_PRESETS = {
     models: [
       'openai/gpt-oss-120b',
       'openai/gpt-oss-20b',
-      'llama-3.1-8b-instant',
-      'llama-3.3-70b-versatile'
+      'qwen/qwen3.8-27b'
     ]
   }
 };
@@ -740,7 +739,11 @@ async function streamSelectedLLM(systemPrompt, history, signal) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`
         },
-        body: JSON.stringify({ model: targetModel, messages, stream: true, max_tokens: 450, temperature: 0.7 }),
+        body: JSON.stringify({
+          model: targetModel, messages, stream: true, max_tokens: 450, temperature: 0.7,
+          // Qwen is a reasoning model; keep its thinking out of the reply that gets spoken
+          ...(targetModel.startsWith('qwen/') && { reasoning_format: 'hidden' })
+        }),
         signal
       });
 
@@ -894,7 +897,7 @@ function stopAndSendRecording() {
         userText = sttData.results?.channels[0]?.alternatives[0]?.transcript || "";
       }
 
-      if (!userText.trim()) throw new Error("No speech detected.");
+      if (!userText.trim()) throw new Error(`No speech detected. Make sure the Chat Language (${selectedLang.toUpperCase()}) matches the language you're speaking.`);
 
       if (userBox) {
         userBox.innerText = userText;
