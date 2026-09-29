@@ -1,7 +1,7 @@
 {
-  "name": "BYOK Voice Assistant",
-  "short_name": "Voice AI",
-  "description": "Real-time BYOK Voice Assistant",
+  "name": "Push to Chat",
+  "short_name": "Push to Chat",
+  "description": "Real-time voice chat that is patient with stuttering",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#121212",

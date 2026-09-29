@@ -1,8 +1,8 @@
 {
-  "name": "voice-assistant",
+  "name": "push-to-chat",
   "version": "1.4.1",
   "private": true,
-  "description": "Real-time BYOK Voice Assistant (PWA)",
+  "description": "Push to Chat: real-time bring-your-own-key voice chat (PWA)",
   "keywords": ["voice", "assistant", "ai", "pwa"],
   "license": "AGPL-3.0-only"
 }
