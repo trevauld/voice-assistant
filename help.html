@@ -210,7 +210,7 @@
     <li><strong>UI Language</strong> (top left, top of the screen on phones): choose the language for the app's buttons and labels. This doesn't change the language you talk in.</li>
     <li><strong>Chat Language</strong> (next to it): choose the language you'll <em>speak</em>.
       <ul>
-        <li>Some languages are tagged with provider names, like <em>Japanese · ElevenLabs, Cartesia</em>. Only those providers support them.</li>
+        <li>Some languages are tagged with provider names, like <em>Japanese · ElevenLabs, Cartesia, Groq</em>. Only those providers support them (Groq only listens; it has no voice).</li>
         <li>If you pick one, the app switches your providers automatically when needed. See <a href="#languages">Languages</a>.</li>
       </ul>
     </li>
@@ -267,7 +267,7 @@
   <p>You can also click the status box, just like tapping on a phone. <kbd>Space</kbd> and <kbd>Enter</kbd> don't work while you're typing in a text box, so click an empty part of the page first. <kbd>Esc</kbd> works anywhere.</p>
 
   <h3>Typing instead of speaking</h3>
-  <p>When speaking is hard, you can type. Use the <span class="ui">Type a message instead…</span> box under the status box, then press <span class="ui">Send</span> (or <kbd>Enter</kbd>). The assistant still answers out loud, and typed and spoken messages are part of the same conversation. Typing only needs an AI Engine key and a voice; no Speech-to-Text key is needed.</p>
+  <p>When speaking is hard, you can type. Use the <span class="ui">Type a message instead…</span> box in the <em>User Prompt</em> section, then press <span class="ui">Send</span> (or <kbd>Enter</kbd>). The assistant still answers out loud, and typed and spoken messages are part of the same conversation. Typing only needs an AI Engine key and a voice; no Speech-to-Text key is needed.</p>
 
   <h3>Your screen stays on</h3>
   <p>Once you start a conversation, the app keeps your screen from turning off or locking while it's open, so a reply is never cut off by the screen going dark. Switch to another app or close it, and your device's normal screen timeout returns.</p>
@@ -311,10 +311,10 @@
     <li><strong>Assistant Response:</strong> the text of the reply you heard.</li>
     <li><strong>Clear Memory (ESC):</strong> forgets the current conversation.</li>
     <li><strong>Enable Debug Inspector:</strong> shows technical details, like how long each step took and the full error message when something fails. Use <span class="ui">Copy Debug Logs</span> to copy them if you're reporting a problem.</li>
-    <li><strong>Type a message instead…:</strong> type a message and send it without speaking.</li>
+    <li><strong>Type a message instead…</strong> (in the <em>User Prompt</em> section): type a message and send it without speaking.</li>
     <li><strong>Speaking Speed:</strong> how fast the assistant talks.</li>
     <li><strong>Theme</strong> (bottom of the app): <span class="ui">System</span> follows your device's light or dark setting; <span class="ui">Light</span> and <span class="ui">Dark</span> always use that look. This guide follows the same choice.</li>
-    <li><strong>Help</strong> (bottom of the app): opens this guide.</li>
+    <li><strong>Help</strong> (top of the app): opens this guide.</li>
   </ul>
   <p>Each section with a small arrow (▼) can be collapsed by tapping its title, to keep the screen tidy.</p>
 
@@ -323,7 +323,7 @@
   <ul>
     <li><strong>32 chat languages</strong> are available.</li>
     <li><strong>English, Spanish, French, German and Italian</strong> work with every provider, so you can mix and match freely (e.g. Deepgram listening with an ElevenLabs voice).</li>
-    <li><strong>All other languages</strong> work with ElevenLabs and Cartesia, and are tagged with those names in the list. Groq's Speech-to-Text also understands all 32, so Groq can do the listening for any of them.</li>
+    <li><strong>All other languages</strong> are tagged with the providers that support them: <em>ElevenLabs, Cartesia, Groq</em>. ElevenLabs and Cartesia can listen and speak; Groq can only listen, so pair it with ElevenLabs or Cartesia for the voice.</li>
   </ul>
   <p>What happens when you choose a tagged language:</p>
   <ol>

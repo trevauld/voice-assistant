@@ -359,10 +359,11 @@ function populateLanguages() {
     opt.disabled = disabled;
     langSelect.appendChild(opt);
   };
-  const bothWays = TTS_PROVIDERS.filter(p => STT_PROVIDERS.includes(p));
-  const providersFor = code => bothWays.filter(p => providerSupports(p, code));
+  // Every provider that handles the language, speaking or listening (Groq only listens)
+  const allProviders = [...new Set([...TTS_PROVIDERS, ...STT_PROVIDERS])];
+  const providersFor = code => allProviders.filter(p => providerSupports(p, code));
   const [universal, partial] = [true, false].map(all =>
-    SUPPORTED_LANGUAGES.elevenlabs.filter(l => (providersFor(l.code).length === bothWays.length) === all));
+    SUPPORTED_LANGUAGES.elevenlabs.filter(l => (providersFor(l.code).length === allProviders.length) === all));
   universal.forEach(l => addOption(l.code, l.name));
   addOption('', '──────────', true);
   partial.forEach(l => addOption(l.code, `${l.name} · ${providersFor(l.code).map(p => PROVIDER_NAMES[p]).join(', ')}`));

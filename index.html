@@ -92,6 +92,16 @@
     .type-row { display: flex; gap: 10px; }
     .type-row input { flex: 1; min-width: 0; }
     .type-row .action-btn { flex: none; }
+    .help-btn {
+      display: inline-flex; align-items: center; gap: 7px; padding: 6px 14px 6px 8px;
+      border: 1px solid var(--btn-border); border-radius: 999px; background: var(--btn);
+      color: var(--text); text-decoration: none; font-size: 0.9rem; font-weight: 600;
+    }
+    .help-btn:hover { background: var(--btn-hover); }
+    .help-icon {
+      display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px;
+      border-radius: 50%; background: var(--accent); color: #fff; font-size: 0.8rem; font-weight: 700;
+    }
     .footer-link { color: var(--faint); text-decoration: none; border-bottom: 1px dashed var(--faint); }
     .mini-select { width: auto; padding: 3px 22px 3px 8px; font-size: 0.75rem; margin-left: 6px; }
 
@@ -261,6 +271,11 @@
 </head>
 <body>
   <div class="container">
+    <!-- Help, always visible at the top -->
+    <div style="display: flex; justify-content: flex-end; margin-bottom: -6px;">
+      <a href="help.html" target="_blank" rel="noopener" class="help-btn"><span class="help-icon" aria-hidden="true">?</span><span id="lbl-help">Help</span></a>
+    </div>
+
     <!-- UI Language & Chat Language (drives which providers can be used) -->
     <div class="grid-2">
       <div>
@@ -374,6 +389,11 @@ Formatting Rules:
     <details open>
       <summary id="sum-user">User Prompt</summary>
       <div id="userPromptBox" class="display-box placeholder">Transcribed user speech will appear here...</div>
+      <!-- Type instead of speaking -->
+      <div class="type-row" style="margin-top: 8px;">
+        <input type="text" id="typedMessage" autocomplete="off" placeholder="Type a message instead…" />
+        <button class="action-btn" id="btn-send-typed">Send</button>
+      </div>
     </details>
 
     <!-- Collapsible Assistant Response Box -->
@@ -401,12 +421,6 @@ Formatting Rules:
       <div class="btn-group">
         <button class="action-btn" id="btn-clear">Clear Memory (ESC)</button>
       </div>
-    </div>
-
-    <!-- Type instead of speaking -->
-    <div class="type-row">
-      <input type="text" id="typedMessage" autocomplete="off" placeholder="Type a message instead…" />
-      <button class="action-btn" id="btn-send-typed">Send</button>
     </div>
 
     <div id="lbl-ctrls" class="controls-hint">
@@ -443,7 +457,6 @@ Formatting Rules:
         </label>
       </span>
       <span style="display: flex; gap: 16px;">
-        <a href="help.html" target="_blank" rel="noopener" class="footer-link" id="lbl-help">Help</a>
         <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener noreferrer" class="footer-link" id="lbl-license">AGPLv3 License</a>
       </span>
     </div>
