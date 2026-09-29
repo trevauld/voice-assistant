@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self' https://api.deepgram.com https://api.elevenlabs.io https://elevenlabs-proxy.keremk.workers.dev https://api.cartesia.ai https://api.mistral.ai https://api.groq.com https://generativelanguage.googleapis.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self' https://api.deepgram.com https://api.elevenlabs.io https://elevenlabs-proxy.keremk.workers.dev https://api.cartesia.ai https://api.mistral.ai https://api.groq.com https://generativelanguage.googleapis.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; require-trusted-types-for 'script'; trusted-types push-to-chat">
   <meta name="referrer" content="no-referrer">
   <script src="theme.js"></script>
   <link rel="manifest" href="manifest.json">
@@ -453,7 +453,7 @@ Formatting Rules:
         <span style="color: var(--faint);">--- TIMING & DIAGNOSTICS ---</span>
         <button class="action-btn" id="btn-copy-debug" style="padding: 2px 8px; font-size: 0.75rem;">Copy Debug Logs</button>
       </div>
-      <div id="debugLogs" style="margin-top: 6px;">Awaiting execution...</div>
+      <div id="debugLogs" style="margin-top: 6px; white-space: pre-line;">Awaiting execution...</div>
       <div style="color: var(--faint); margin: 10px 0 2px 0;">--- RAW STREAM AUDIT ---</div>
       <pre id="geminiRawLog">No API requests captured yet.</pre>
     </div>

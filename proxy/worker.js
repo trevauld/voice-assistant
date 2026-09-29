@@ -53,6 +53,9 @@ export default {
 
     const proxied = new Response(response.body, response);
     for (const [name, value] of Object.entries(corsHeaders)) proxied.headers.set(name, value);
+    // Responses carry account data and generated audio; never let a browser or cache keep them
+    proxied.headers.set('Cache-Control', 'no-store');
+    proxied.headers.delete('Set-Cookie');
     return proxied;
   },
 };

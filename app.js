@@ -231,7 +231,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(err => console.error('SW Registration failed:', err));
+    // Trusted Types (see the CSP) only lets this one policy create script URLs, and only for sw.js
+    const scriptUrls = window.trustedTypes && trustedTypes.createPolicy('push-to-chat', {
+      createScriptURL: url => { if (url === 'sw.js') return url; throw new TypeError(`Blocked script URL: ${url}`); }
+    });
+    navigator.serviceWorker.register(scriptUrls ? scriptUrls.createScriptURL('sw.js') : 'sw.js')
+      .catch(err => console.error('SW Registration failed:', err));
   });
 }
 
@@ -340,7 +345,7 @@ function populateLanguages() {
   const langSelect = document.getElementById('selectedLanguage');
   const savedLang = localStorage.getItem('selected_language') || 'en';
 
-  langSelect.innerHTML = '';
+  langSelect.replaceChildren();
 
   // Always list every language; ones not every provider can handle are tagged with the providers that can
   const addOption = (value, text, disabled = false) => {
@@ -374,7 +379,7 @@ function populateVoices() {
   const lang = document.getElementById('selectedLanguage').value;
   const voiceSelect = document.getElementById('ttsVoice');
   
-  voiceSelect.innerHTML = '';
+  voiceSelect.replaceChildren();
   let voices = [];
 
   if (provider === 'elevenlabs') {
@@ -623,6 +628,7 @@ function stopAssistant() {
 }
 
 function clearMemory() {
+  cancelRecording();
   stopAssistant();
   conversationHistory = [];
   
@@ -633,7 +639,7 @@ function clearMemory() {
   if (assistantBox) { const t = UI_TRANSLATIONS[document.getElementById('uiLanguage').value] || UI_TRANSLATIONS.en; assistantBox.innerText = t.aiPlaceholder; assistantBox.classList.add('placeholder'); }
 
   const logs = document.getElementById('debugLogs');
-  if (logs) logs.innerHTML = "Memory cleared.";
+  if (logs) logs.textContent = "Memory cleared.";
   const rawLog = document.getElementById('geminiRawLog');
   if (rawLog) rawLog.innerText = "Memory cleared.";
   updateStatus("statusReady", "statusSubReady", "status-idle");
@@ -666,7 +672,14 @@ async function startRecording() {
     return;
   }
 
-  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch (err) {
+    const t = UI_TRANSLATIONS[document.getElementById('uiLanguage').value] || UI_TRANSLATIONS.en;
+    alert(t.errMic);
+    return;
+  }
 
   let options = {};
   let selectedMime = '';
@@ -1077,7 +1090,7 @@ async function runTurn({ audioBlob = null, typedText = '' }) {
     let userText = typedText;
     let sttLabel = 'Typed message';
     if (audioBlob) {
-      if (logs) logs.innerHTML = `Uploading audio to ${sttProvider.toUpperCase()} STT...`;
+      if (logs) logs.textContent = `Uploading audio to ${sttProvider.toUpperCase()} STT...`;
       userText = cleanDisfluencies(await transcribeAudio(audioBlob, { provider: sttProvider, key: sttKey, lang: selectedLang, mime: window.currentRecordingMime || 'audio/webm' }, signal));
       if (!userText.trim()) throw new Error(`No speech detected. Make sure the Chat Language (${selectedLang.toUpperCase()}) matches the language you're speaking.`);
       sttLabel = `STT (${sttProvider.toUpperCase()} ${selectedLang.toUpperCase()}): ${(performance.now() - t0).toFixed(0)} ms`;
@@ -1088,7 +1101,7 @@ async function runTurn({ audioBlob = null, typedText = '' }) {
       userBox.innerText = userText;
       userBox.classList.remove('placeholder');
     }
-    if (logs) logs.innerHTML = `${sttLabel}<br>Calling LLM Engine...`;
+    if (logs) logs.textContent = `${sttLabel}\nCalling LLM Engine...`;
 
     conversationHistory.push({ role: "user", content: userText });
     if (conversationHistory.length > 8) conversationHistory = conversationHistory.slice(-8);
@@ -1127,7 +1140,7 @@ async function runTurn({ audioBlob = null, typedText = '' }) {
       const providerName = PROVIDER_PRESETS[document.getElementById('llmProvider').value].name;
       rawLogEl.innerText = `[DEBUG INSPECTOR]\nProvider: ${providerName}\nModel ID: ${llm.model}\nHTTP Status: ${llm.status} OK\nReply Language: ${languageName}\nUser Prompt: "${userText}"\nTime to First Token (TTFT): ${llm.ttft} ms\nTotal LLM Latency: ${llm.totalTime} ms\nVoice Tag: ${selectedVoiceTag}\n\n--- RAW AI RESPONSE ---\n"${llm.text}"\n\n--- SANITIZED FOR TTS ---\n"${cleanAiText}"`;
     }
-    if (logs) logs.innerHTML = `${sttLabel}<br>LLM (${llm.model}): ${llm.totalTime} ms (TTFT: ${llm.ttft} ms)<br>Speaking...`;
+    if (logs) logs.textContent = `${sttLabel}\nLLM (${llm.model}): ${llm.totalTime} ms (TTFT: ${llm.ttft} ms)\nSpeaking...`;
 
     // 3. Wait until every sentence has been spoken
     await speech.finished();
@@ -1136,7 +1149,7 @@ async function runTurn({ audioBlob = null, typedText = '' }) {
 
     if (logs) {
       const firstAudio = firstAudioAt ? `${(firstAudioAt - t0).toFixed(0)} ms` : 'n/a';
-      logs.innerHTML = `${sttLabel}<br>LLM (${llm.model}): ${llm.totalTime} ms (TTFT: ${llm.ttft} ms)<br><strong style="color: var(--text);">Time to first audio: ${firstAudio}</strong><br>Total until speech finished: ${(performance.now() - t0).toFixed(0)} ms`;
+      logs.textContent = `${sttLabel}\nLLM (${llm.model}): ${llm.totalTime} ms (TTFT: ${llm.ttft} ms)\nTime to first audio: ${firstAudio}\nTotal until speech finished: ${(performance.now() - t0).toFixed(0)} ms`;
     }
     updateStatus("statusReady", "statusSubReady", "status-idle");
 
@@ -1226,7 +1239,7 @@ function updateStatus(titleKey, subtitleKey, className) {
 function populateUiLanguages() {
   const uiLangSelect = document.getElementById('uiLanguage');
   if(!uiLangSelect) return;
-  uiLangSelect.innerHTML = '';
+  uiLangSelect.replaceChildren();
   SUPPORTED_LANGUAGES.elevenlabs.forEach(l => {
     const opt = document.createElement('option');
     opt.value = l.code;
@@ -1239,6 +1252,18 @@ function populateUiLanguages() {
   } else {
     uiLangSelect.value = 'en';
   }
+}
+
+// The hint text marks key names with <strong>...</strong>; build those as elements instead of
+// parsing HTML, so the page never assigns HTML strings (enforced by Trusted Types in the CSP)
+function renderControlsHint(el, text) {
+  el.replaceChildren(...text.split(/(<strong>.*?<\/strong>)/).filter(Boolean).map(part => {
+    const bold = part.match(/^<strong>(.*)<\/strong>$/);
+    if (!bold) return document.createTextNode(part);
+    const strong = document.createElement('strong');
+    strong.textContent = bold[1];
+    return strong;
+  }));
 }
 
 function applyUILanguage() {
@@ -1280,7 +1305,7 @@ function applyUILanguage() {
   if (assistantBox && assistantBox.classList.contains('placeholder')) assistantBox.innerText = t.aiPlaceholder;
   document.getElementById('typedMessage').placeholder = t.typePh;
   const ctrls = document.getElementById('lbl-ctrls');
-  if (ctrls && t.ctrls) ctrls.innerHTML = t.ctrls;
+  if (ctrls && t.ctrls) renderControlsHint(ctrls, t.ctrls);
   updateSttKeyField();
   updateTtsKeyField();
   updateLlmKeyField();
