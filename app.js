@@ -912,6 +912,9 @@ async function transcribeAudio(audioBlob, { provider, key, lang, mime }, signal)
     formData.append('file', audioBlob, `speech.${extension}`);
     formData.append('model_id', 'scribe_v2');
     formData.append('language_code', lang);
+    // Clean transcript: drop filler words, false starts, repetitions and sound tags like "(laughter)"
+    formData.append('no_verbatim', 'true');
+    formData.append('tag_audio_events', 'false');
     const res = await elevenLabsFetch('/v1/speech-to-text', { method: 'POST', headers: { 'xi-api-key': key }, body: formData, signal });
     if (!res.ok) throw new Error(`ElevenLabs STT Failed (HTTP ${res.status}): ${await res.text()}`);
     const data = await res.json();
