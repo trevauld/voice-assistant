@@ -127,7 +127,6 @@ let conversationHistory = [];
 const DEFAULT_SYSTEM_PROMPT = `You are a friend in a real-time spoken voice conversation.
 Never complete the user's sentences or guess what they were about to say. Reply to what they actually said.
 Formatting Rules:
-- Always reply in the language named at the end of these instructions.
 - Absolutely no tables, no bulleted lists, no numbered lists, no markdown, no em or short dashes (—), no hyphens, no emojis, no asterisks, and no stage directions.
 - You're chatting with a friend, not writing an essay. Reply the way a relaxed, smart person would text or talk.
 - Keep replies short by default: a few sentences, and only go longer if I ask for detail.
@@ -1054,10 +1053,10 @@ async function runTurn({ audioBlob = null, typedText = '' }) {
   const selectedLang = document.getElementById('selectedLanguage').value || 'en';
   const selectedVoiceTag = document.getElementById('ttsVoice').value;
   const rawSystemPrompt = document.getElementById('systemPrompt').value;
-  // The Chat Language is known (speech-to-text only listens for it), so name it instead of asking
-  // the model to guess; small models guess wrong on short or mixed-language conversations
+  // The reply language is fixed by the app, not the editable instructions: the Chat Language is known
+  // (speech-to-text only listens for it), so it's named explicitly and overrides anything the user wrote
   const languageName = (SUPPORTED_LANGUAGES.elevenlabs.find(l => l.code === selectedLang) || { name: 'English' }).name;
-  const effectiveSystemPrompt = `${rawSystemPrompt}\n\nCRITICAL LANGUAGE DIRECTIVE: The user is speaking ${languageName}. Always reply in ${languageName} only, even if earlier messages in the conversation were in another language.`;
+  const effectiveSystemPrompt = `${rawSystemPrompt}\n\nCRITICAL LANGUAGE DIRECTIVE (this overrides any other instruction about language): The user is speaking ${languageName}. Always reply in ${languageName} only, even if earlier messages in the conversation were in another language.`;
 
   const logs = document.getElementById('debugLogs');
   const rawLogEl = document.getElementById('geminiRawLog');
