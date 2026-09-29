@@ -1,0 +1,10 @@
+// Cloudflare deploy settings for the site itself (the repository root is the site; see .assetsignore).
+// Deployed automatically by Cloudflare on every push to main.
+{
+  "name": "push-to-chat",
+  "compatibility_date": "2026-09-24",
+  "assets": { "directory": "." },
+  "workers_dev": true,
+  // No per-version preview URLs: old builds must not stay reachable at their own addresses
+  "preview_urls": false
+}
