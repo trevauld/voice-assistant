@@ -157,8 +157,7 @@ function setSavedKey(type, provider, val) {
 document.addEventListener('DOMContentLoaded', () => {
   const sttProvider = localStorage.getItem('stt_provider') || 'deepgram';
   const ttsProvider = localStorage.getItem('tts_provider') || 'deepgram';
-  // Saved providers that are no longer offered fall back to the defaults (Cerebras was removed: it needs a card)
-  localStorage.removeItem('llm_key_cerebras');
+  // A saved provider that is no longer offered falls back to the default
   const offered = (id, value) => [...document.getElementById(id).options].some(o => o.value === value);
   const savedLlm = localStorage.getItem('llm_provider');
   const llmProvider = offered('llmProvider', savedLlm) ? savedLlm : 'mistral';
