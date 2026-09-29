@@ -1,7 +1,8 @@
-const CACHE_NAME = 'voice-assistant-cache-v5';
+const CACHE_NAME = 'voice-assistant-cache-v6';
 const urlsToCache = [
   './',
   './app.js',
+  './theme.js',
   './translations.js',
   './manifest.json'
 ];

@@ -2,8 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self' https://api.deepgram.com https://api.elevenlabs.io https://elevenlabs-proxy.keremk.workers.dev https://api.cartesia.ai https://api.mistral.ai https://api.groq.com https://generativelanguage.googleapis.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self' https://api.deepgram.com https://api.elevenlabs.io https://elevenlabs-proxy.keremk.workers.dev https://api.cartesia.ai https://api.cerebras.ai https://api.mistral.ai https://api.groq.com https://generativelanguage.googleapis.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <meta name="referrer" content="no-referrer">
+  <script src="theme.js"></script>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#181818">
   <link rel="apple-touch-icon" href="assets/icon-192.png">
@@ -11,10 +12,42 @@
   <title>Push to Chat</title>
   <meta name="apple-mobile-web-app-title" content="Push to Chat">
   <style>
+    :root {
+      color-scheme: dark;
+      --bg: #121212; --panel: #181818; --panel-border: #2a2a2a;
+      --field: #222222; --field-border: #3a3a3a; --card-hover: #2a2a2a; --idle-border: #333;
+      --text: #ffffff; --muted: #aaa; --faint: #888; --placeholder: #666; --line: rgba(255, 255, 255, 0.1);
+      --btn: #333; --btn-hover: #444; --btn-border: #444; --accent: #6366f1;
+      --rec: #ff4d4d; --proc: #e6b800; --speak: #4da6ff;
+      --ok: #00ff66; --bad: #ff4d4d; --response: #00ff66;
+      --debug-bg: #080808; --debug-border: #333; --debug-text: #00ff00; --pre-bg: #0e0e0e; --pre-border: #222;
+    }
+    :root[data-theme="light"] {
+      color-scheme: light;
+      --bg: #f2f2f4; --panel: #ffffff; --panel-border: #e0e0e5;
+      --field: #f7f7f9; --field-border: #cfcfd6; --card-hover: #eeeef2; --idle-border: #d5d5dc;
+      --text: #15151a; --muted: #55555f; --faint: #6b6b75; --placeholder: #9a9aa3; --line: rgba(0, 0, 0, 0.1);
+      --btn: #ececf0; --btn-hover: #e0e0e6; --btn-border: #d0d0d8; --accent: #4f46e5;
+      --rec: #d32f2f; --proc: #9a6b00; --speak: #1a6fd6;
+      --ok: #0a8043; --bad: #d32f2f; --response: #0a7a3d;
+      --debug-bg: #f7f7f9; --debug-border: #d5d5dc; --debug-text: #0a7a3d; --pre-bg: #ffffff; --pre-border: #e0e0e5;
+    }
+    @media (prefers-color-scheme: light) {
+      :root:not([data-theme="dark"]) {
+        color-scheme: light;
+        --bg: #f2f2f4; --panel: #ffffff; --panel-border: #e0e0e5;
+        --field: #f7f7f9; --field-border: #cfcfd6; --card-hover: #eeeef2; --idle-border: #d5d5dc;
+        --text: #15151a; --muted: #55555f; --faint: #6b6b75; --placeholder: #9a9aa3; --line: rgba(0, 0, 0, 0.1);
+        --btn: #ececf0; --btn-hover: #e0e0e6; --btn-border: #d0d0d8; --accent: #4f46e5;
+        --rec: #d32f2f; --proc: #9a6b00; --speak: #1a6fd6;
+        --ok: #0a8043; --bad: #d32f2f; --response: #0a7a3d;
+        --debug-bg: #f7f7f9; --debug-border: #d5d5dc; --debug-text: #0a7a3d; --pre-bg: #ffffff; --pre-border: #e0e0e5;
+      }
+    }
     html {
       height: 100%;
-      background: #121212;
-      color: #ffffff;
+      background: var(--bg);
+      color: var(--text);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
     body {
@@ -33,8 +66,8 @@
       width: 100%;
       max-width: 1400px;
       padding: 24px;
-      background: #181818;
-      border: 1px solid #2a2a2a;
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
       border-radius: 12px;
       box-sizing: border-box;
       height: auto;
@@ -42,9 +75,9 @@
     }
     input[type="text"], input[type="password"], textarea, select {
       width: 100%;
-      background: #222222;
-      border: 1px solid #3a3a3a;
-      color: #fff;
+      background: var(--field);
+      border: 1px solid var(--field-border);
+      color: var(--text);
       padding: 10px 12px;
       border-radius: 6px;
       box-sizing: border-box;
@@ -56,7 +89,11 @@
       min-height: 80px;
     }
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-    .centered-half { width: calc(50% - 7px); margin: 8px auto 0; }
+    .type-row { display: flex; gap: 10px; }
+    .type-row input { flex: 1; min-width: 0; }
+    .type-row .action-btn { flex: none; }
+    .footer-link { color: var(--faint); text-decoration: none; border-bottom: 1px dashed var(--faint); }
+    .mini-select { width: auto; padding: 3px 22px 3px 8px; font-size: 0.75rem; margin-left: 6px; }
 
     /* Native Checkbox Styling */
     input[type="checkbox"] {
@@ -64,7 +101,7 @@
       -webkit-appearance: checkbox !important;
       width: 18px !important;
       height: 18px !important;
-      accent-color: #6366f1;
+      accent-color: var(--accent);
       cursor: pointer;
     }
 
@@ -74,16 +111,16 @@
       font-weight: 600;
       cursor: pointer;
       user-select: none;
-      color: #aaa;
+      color: var(--muted);
       margin-bottom: 6px;
       outline: none;
       transition: color 0.2s;
     }
-    summary:hover { color: #ffffff; }
+    summary:hover { color: var(--text); }
 
     .status-card {
-      background: #222222;
-      border: 2px solid #3a3a3a;
+      background: var(--field);
+      border: 2px solid var(--field-border);
       border-radius: 10px;
       padding: 30px 20px;
       text-align: center;
@@ -91,27 +128,27 @@
       cursor: pointer;
       transition: background 0.2s, border-color 0.2s;
     }
-    .status-card:hover { background: #2a2a2a; }
+    .status-card:hover { background: var(--card-hover); }
     .status-title { font-size: 2rem; font-weight: bold; margin-bottom: 8px; }
-    .status-idle { color: #888; border-color: #333; }
-    .status-recording { color: #ff4d4d; border-color: #ff4d4d; }
-    .status-processing { color: #e6b800; border-color: #e6b800; }
-    .status-speaking { color: #4da6ff; border-color: #4da6ff; }
+    .status-idle { color: var(--faint); border-color: var(--idle-border); }
+    .status-recording { color: var(--rec); border-color: var(--rec); }
+    .status-processing { color: var(--proc); border-color: var(--proc); }
+    .status-speaking { color: var(--speak); border-color: var(--speak); }
 
-    .controls-hint { font-size: 0.9rem; color: #aaa; text-align: center; line-height: 1.5; }
+    .controls-hint { font-size: 0.9rem; color: var(--muted); text-align: center; line-height: 1.5; }
     .btn-group { display: flex; justify-content: center; gap: 12px; margin-top: 14px; }
     .action-btn {
-      background: #333; color: #fff; border: 1px solid #444; padding: 8px 16px;
+      background: var(--btn); color: var(--text); border: 1px solid var(--btn-border); padding: 8px 16px;
       border-radius: 6px; cursor: pointer; font-size: 0.85rem;
     }
-    .action-btn:hover { background: #444; }
+    .action-btn:hover { background: var(--btn-hover); }
     .credit-badge {
       font-size: 0.8rem; margin-top: 5px; display: block; font-weight: 500; min-height: 1.1rem;
     }
     .display-box {
-      background: #222222;
-      border: 1px solid #3a3a3a;
-      color: #00ff66;
+      background: var(--field);
+      border: 1px solid var(--field-border);
+      color: var(--response);
       padding: 12px;
       border-radius: 6px;
       min-height: 68px;
@@ -124,7 +161,7 @@
       word-break: break-word;
       user-select: text !important;
     }
-    .display-box.placeholder { color: #666; font-style: italic; }
+    .display-box.placeholder { color: var(--placeholder); font-style: italic; }
 
     .waveform {
       display: none;
@@ -138,7 +175,7 @@
     .bar {
       width: 5px;
       height: 100%;
-      background: #4da6ff;
+      background: var(--speak);
       border-radius: 3px;
       animation: oscillate 1s ease-in-out infinite;
     }
@@ -157,13 +194,13 @@
 
     #debugPanel {
       display: none; margin-top: 10px; padding: 18px; 
-      background: #080808; border: 1px solid #333; border-radius: 6px; 
-      font-family: monospace; font-size: 0.85rem; color: #00ff00;
+      background: var(--debug-bg); border: 1px solid var(--debug-border); border-radius: 6px; 
+      font-family: monospace; font-size: 0.85rem; color: var(--debug-text);
       resize: vertical; overflow: auto;
       user-select: text !important;
     }
     pre {
-      background: #0e0e0e; color: #00ff66; padding: 12px; border: 1px solid #222;
+      background: var(--pre-bg); color: var(--response); padding: 12px; border: 1px solid var(--pre-border);
       border-radius: 6px; max-height: 250px; overflow: auto; font-size: 0.8rem;
       white-space: pre-wrap; word-break: break-all; margin-top: 6px;
       user-select: text !important;
@@ -183,9 +220,6 @@
       }
       .grid-2 {
         grid-template-columns: 1fr;
-      }
-      .centered-half {
-        width: 100%;
       }
       input[type="text"], input[type="password"], textarea, select {
         font-size: 1.1rem;
@@ -248,6 +282,7 @@
             <option value="deepgram">Deepgram Nova-2</option>
             <option value="elevenlabs">ElevenLabs Scribe</option>
             <option value="cartesia">Cartesia Ink Whisper</option>
+            <option value="groq">Groq Whisper</option>
           </select>
         </div>
         <div>
@@ -273,9 +308,21 @@
           <span id="ttsCredits" class="credit-badge"></span>
         </div>
       </div>
-      <div class="centered-half">
-        <label id="lbl-voice" style="font-size: 0.85rem;">Assistant Voice Persona</label>
-        <select id="ttsVoice"></select>
+      <div class="grid-2" style="margin-top: 8px;">
+        <div>
+          <label id="lbl-voice" style="font-size: 0.85rem;">Assistant Voice Persona</label>
+          <select id="ttsVoice"></select>
+        </div>
+        <div>
+          <label id="lbl-speed" style="font-size: 0.85rem;" for="ttsSpeed">Speaking Speed</label>
+          <select id="ttsSpeed">
+            <option value="0.75">0.75×</option>
+            <option value="0.85">0.85×</option>
+            <option value="1">1×</option>
+            <option value="1.15">1.15×</option>
+            <option value="1.3">1.3×</option>
+          </select>
+        </div>
       </div>
     </div>
 
@@ -288,6 +335,7 @@
             <option value="mistral">Mistral AI</option>
             <option value="gemini">Google Gemini</option>
             <option value="groq">Groq</option>
+            <option value="cerebras">Cerebras</option>
           </select>
         </div>
         <div>
@@ -356,6 +404,12 @@ Formatting Rules:
       </div>
     </div>
 
+    <!-- Type instead of speaking -->
+    <div class="type-row">
+      <input type="text" id="typedMessage" autocomplete="off" placeholder="Type a message instead…" />
+      <button class="action-btn" id="btn-send-typed">Send</button>
+    </div>
+
     <div id="lbl-ctrls" class="controls-hint">
       <strong>[ SPACEBAR ]</strong> Record/Pause/Interrupt | <strong>[ ENTER ]</strong> Send | <strong>[ ESC ]</strong> Clear Memory
     </div>
@@ -369,20 +423,29 @@ Formatting Rules:
 
     <div id="debugPanel">
       <div style="display: flex; justify-content: space-between; align-items: center;">
-        <span style="color: #888;">--- TIMING & DIAGNOSTICS ---</span>
+        <span style="color: var(--faint);">--- TIMING & DIAGNOSTICS ---</span>
         <button class="action-btn" id="btn-copy-debug" style="padding: 2px 8px; font-size: 0.75rem;">Copy Debug Logs</button>
       </div>
       <div id="debugLogs" style="margin-top: 6px;">Awaiting execution...</div>
-      <div style="color: #888; margin: 10px 0 2px 0;">--- RAW STREAM AUDIT ---</div>
+      <div style="color: var(--faint); margin: 10px 0 2px 0;">--- RAW STREAM AUDIT ---</div>
       <pre id="geminiRawLog">No API requests captured yet.</pre>
     </div>
 
     <!-- App Version & License Footer -->
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.1); font-size: 0.75rem; color: #888;">
-      <span id="appVersion">v1.4.2</span>
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 15px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 0.75rem; color: var(--faint);">
+      <span style="display: flex; align-items: center; gap: 16px;">
+        <span id="appVersion">v1.4.2</span>
+        <label style="display: flex; align-items: center;"><span id="lbl-theme">Theme</span>
+          <select id="themeSelect" class="mini-select">
+            <option value="system" id="opt-theme-system">System</option>
+            <option value="light" id="opt-theme-light">Light</option>
+            <option value="dark" id="opt-theme-dark">Dark</option>
+          </select>
+        </label>
+      </span>
       <span style="display: flex; gap: 16px;">
-        <a href="help.html" target="_blank" rel="noopener" style="color: #888; text-decoration: none; border-bottom: 1px dashed #666;" id="lbl-help">Help</a>
-        <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener noreferrer" style="color: #888; text-decoration: none; border-bottom: 1px dashed #666;" id="lbl-license">AGPLv3 License</a>
+        <a href="help.html" target="_blank" rel="noopener" class="footer-link" id="lbl-help">Help</a>
+        <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener noreferrer" class="footer-link" id="lbl-license">AGPLv3 License</a>
       </span>
     </div>
 

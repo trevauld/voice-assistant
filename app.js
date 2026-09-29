@@ -16,6 +16,14 @@ const PROVIDER_PRESETS = {
     baseUrl: 'https://generativelanguage.googleapis.com/v1beta/models',
     model: 'gemini-3.5-flash'
   },
+  cerebras: {
+    name: 'Cerebras',
+    baseUrl: 'https://api.cerebras.ai/v1/chat/completions',
+    models: [
+      'gpt-oss-120b',
+      'qwen-3.8-27b'
+    ]
+  },
   groq: {
     name: 'Groq',
     baseUrl: 'https://api.groq.com/openai/v1/chat/completions',
@@ -109,11 +117,13 @@ function cartesiaHeaders(key) {
   return { 'Authorization': `Bearer ${key}`, 'Cartesia-Version': CARTESIA_VERSION };
 }
 
-// Speech providers in fallback order, and their display names
-const SPEECH_PROVIDERS = ['deepgram', 'elevenlabs', 'cartesia'];
-const PROVIDER_NAMES = { deepgram: 'Deepgram', elevenlabs: 'ElevenLabs', cartesia: 'Cartesia' };
+// Speech providers in fallback order, and their display names (Groq only listens)
+const STT_PROVIDERS = ['deepgram', 'elevenlabs', 'cartesia', 'groq'];
+const TTS_PROVIDERS = ['deepgram', 'elevenlabs', 'cartesia'];
+const PROVIDER_NAMES = { deepgram: 'Deepgram', elevenlabs: 'ElevenLabs', cartesia: 'Cartesia', groq: 'Groq' };
 
 SUPPORTED_LANGUAGES.cartesia = SUPPORTED_LANGUAGES.elevenlabs;
+SUPPORTED_LANGUAGES.groq = SUPPORTED_LANGUAGES.elevenlabs; // Whisper covers all 32
 
 let currentAudio = null;
 let pipelineAbortController = null;
@@ -146,7 +156,8 @@ Formatting Rules:
 
 // Key Management Helpers
 // A key entered for STT is also offered for TTS on the same provider (and vice versa)
-const SHARED_KEY_NAMES = { deepgram: 'dg_key', elevenlabs: 'xi_key', cartesia: 'ct_key' };
+// (Groq's speech-to-text uses the same key as the Groq AI Engine)
+const SHARED_KEY_NAMES = { deepgram: 'dg_key', elevenlabs: 'xi_key', cartesia: 'ct_key', groq: 'llm_key_groq' };
 
 function getSavedKey(type, provider) {
   const stored = localStorage.getItem(`${type}_key_${provider}`);
@@ -171,6 +182,9 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('llmProvider').value = llmProvider;
 
   document.getElementById('systemPrompt').value = localStorage.getItem('system_prompt') || DEFAULT_SYSTEM_PROMPT;
+  document.getElementById('ttsSpeed').value = localStorage.getItem('tts_speed') || '1';
+  document.getElementById('themeSelect').value = localStorage.getItem('theme') || 'system';
+  applyTheme();
 
   updateSttKeyField();
   updateTtsKeyField();
@@ -199,6 +213,10 @@ document.addEventListener('DOMContentLoaded', () => {
   on('btn-clear', 'click', (event) => { event.stopPropagation(); clearMemory(); });
   on('debugToggle', 'change', toggleDebug);
   on('btn-copy-debug', 'click', copyDebugText);
+  on('ttsSpeed', 'change', onSpeedChange);
+  on('btn-send-typed', 'click', sendTypedMessage);
+  on('typedMessage', 'keydown', event => { if (event.key === 'Enter') { event.preventDefault(); sendTypedMessage(); } });
+  on('themeSelect', 'change', onThemeChange);
 
   // Global Keyboard Hotkeys
   document.addEventListener('keydown', async (event) => {
@@ -293,6 +311,10 @@ function onLlmKeyChange() {
   const val = document.getElementById('llmKey').value;
   localStorage.setItem(`llm_key_${provider}`, val.trim());
   scheduleKeyCheck('llm', checkLlmCredits);
+  if (provider === 'groq' && document.getElementById('sttProvider').value === 'groq' && !localStorage.getItem('stt_key_groq')) {
+    updateSttKeyField();
+    scheduleKeyCheck('stt', checkSttCredits);
+  }
 }
 
 function providerSupports(provider, lang) {
@@ -301,7 +323,7 @@ function providerSupports(provider, lang) {
 
 // Prefer the provider the other side already uses, then one with a saved key, then the first that fits
 function pickProviderFor(type, lang, otherProvider) {
-  const candidates = SPEECH_PROVIDERS.filter(p => providerSupports(p, lang));
+  const candidates = (type === 'stt' ? STT_PROVIDERS : TTS_PROVIDERS).filter(p => providerSupports(p, lang));
   return candidates.find(p => p === otherProvider)
     || candidates.find(p => getSavedKey(type, p))
     || candidates[0];
@@ -340,9 +362,10 @@ function populateLanguages() {
     opt.disabled = disabled;
     langSelect.appendChild(opt);
   };
-  const providersFor = code => SPEECH_PROVIDERS.filter(p => providerSupports(p, code));
+  const bothWays = TTS_PROVIDERS.filter(p => STT_PROVIDERS.includes(p));
+  const providersFor = code => bothWays.filter(p => providerSupports(p, code));
   const [universal, partial] = [true, false].map(all =>
-    SUPPORTED_LANGUAGES.elevenlabs.filter(l => (providersFor(l.code).length === SPEECH_PROVIDERS.length) === all));
+    SUPPORTED_LANGUAGES.elevenlabs.filter(l => (providersFor(l.code).length === bothWays.length) === all));
   universal.forEach(l => addOption(l.code, l.name));
   addOption('', '──────────', true);
   partial.forEach(l => addOption(l.code, `${l.name} · ${providersFor(l.code).map(p => PROVIDER_NAMES[p]).join(', ')}`));
@@ -482,7 +505,7 @@ function renderBadge(badge) {
   const t = UI_TRANSLATIONS[document.getElementById('uiLanguage').value] || UI_TRANSLATIONS.en;
   const state = badge.dataset.state;
   if (!state) return;
-  badge.style.color = state === 'req' ? '#888' : state === 'nocred' ? '#ff4d4d' : '#00ff66';
+  badge.style.color = state === 'req' ? 'var(--faint)' : state === 'nocred' ? 'var(--bad)' : 'var(--ok)';
   badge.innerText = state === 'req' ? t.reqKey
     : state === 'avail' ? t.credAvail
     : state === 'nocred' ? t.noCred
@@ -507,6 +530,9 @@ async function probeKeyCredits(provider, key, badge) {
         headers: { 'Authorization': `Token ${key}` }
       });
       setBadge(badge, checkId, res.status === 400 || res.ok ? 'avail' : 'nocred');
+    } else if (provider === 'groq') {
+      const res = await fetch('https://api.groq.com/openai/v1/models', { headers: { 'Authorization': `Bearer ${key}` } });
+      setBadge(badge, checkId, res.ok ? 'avail' : 'nocred');
     } else if (provider === 'cartesia') {
       // Cartesia has no credits endpoint; a successful authenticated request means the key works
       const res = await fetch(`${CARTESIA_API}/voices?limit=1`, { headers: cartesiaHeaders(key) });
@@ -531,6 +557,9 @@ async function checkLlmCredits() {
       headers = { 'x-goog-api-key': llmKey };
     } else if (provider === 'groq') {
       url = 'https://api.groq.com/openai/v1/models';
+      headers = { 'Authorization': `Bearer ${llmKey}` };
+    } else if (provider === 'cerebras') {
+      url = 'https://api.cerebras.ai/v1/models';
       headers = { 'Authorization': `Bearer ${llmKey}` };
     } else if (provider === 'mistral') {
       url = 'https://api.mistral.ai/v1/models';
@@ -660,10 +689,11 @@ async function startRecording() {
 
   mediaRecorder.start();
   isRecording = true;
+  keepScreenAwake();
   updateStatus("statusRec", "statusSubRec", "status-recording");
 }
 
-async function streamSelectedLLM(systemPrompt, history, signal) {
+async function streamSelectedLLM(systemPrompt, history, signal, onDelta = () => {}) {
   const provider = document.getElementById('llmProvider').value;
   const apiKey = document.getElementById('llmKey').value.trim();
   const preset = PROVIDER_PRESETS[provider];
@@ -715,7 +745,7 @@ async function streamSelectedLLM(systemPrompt, history, signal) {
           try {
             const data = JSON.parse(jsonStr);
             const parts = data.candidates?.[0]?.content?.parts || [];
-            for (const p of parts) if (p.text && !p.thought) text += p.text;
+            for (const p of parts) if (p.text && !p.thought) { text += p.text; onDelta(p.text); }
           } catch (e) {}
         }
       }
@@ -732,6 +762,7 @@ async function streamSelectedLLM(systemPrompt, history, signal) {
   let lastError = null;
 
   for (const targetModel of modelList) {
+    let streamed = false;
     try {
       const response = await fetch(preset.baseUrl, {
         method: 'POST',
@@ -741,8 +772,10 @@ async function streamSelectedLLM(systemPrompt, history, signal) {
         },
         body: JSON.stringify({
           model: targetModel, messages, stream: true, max_tokens: 450, temperature: 0.7,
-          // Qwen is a reasoning model; keep its thinking out of the reply that gets spoken
-          ...(targetModel.startsWith('qwen/') && { reasoning_format: 'hidden' })
+          // Qwen on Groq is a reasoning model; keep its thinking out of the reply that gets spoken
+          ...(provider === 'groq' && targetModel.startsWith('qwen/') && { reasoning_format: 'hidden' }),
+          // gpt-oss on Cerebras counts its reasoning against max_tokens; keep it short so the answer fits
+          ...(provider === 'cerebras' && targetModel.startsWith('gpt-oss') && { reasoning_effort: 'low' })
         }),
         signal
       });
@@ -780,7 +813,7 @@ async function streamSelectedLLM(systemPrompt, history, signal) {
             try {
               const data = JSON.parse(jsonStr);
               const delta = data.choices?.[0]?.delta?.content || "";
-              text += delta;
+              if (delta) { text += delta; streamed = true; onDelta(delta); }
             } catch (e) {}
           }
         }
@@ -789,7 +822,8 @@ async function streamSelectedLLM(systemPrompt, history, signal) {
       return { text, model: targetModel, status, ttft, totalTime: (performance.now() - tStart).toFixed(0), chunkCount };
 
     } catch (err) {
-      if (err.name === 'AbortError') throw err;
+      // Once part of a reply has been spoken, switching models would repeat or contradict it
+      if (err.name === 'AbortError' || streamed) throw err;
       lastError = err;
       console.warn(`[${preset.name}] ${targetModel} failed: ${err.message}. Trying next model...`);
     }
@@ -798,9 +832,180 @@ async function streamSelectedLLM(systemPrompt, history, signal) {
   throw lastError || new Error(`[${preset.name}] All candidate models failed or exceeded rate limits.`);
 }
 
+// Reasoning models may wrap their thinking in <think> tags; it is never shown or spoken
+function stripThinking(text) {
+  return text.replace(/<think>[\s\S]*?(<\/think>|$)/g, '');
+}
+
+// Split streamed text into sentences so speech can start before the whole reply is written.
+// The first sentence goes out immediately; later ones are grouped to avoid many tiny requests.
+function createSentenceSplitter(onChunk) {
+  const boundary = /^[\s\S]*?(?:[.!?…]+["'”’)\]]*\s+|[。！？]+)/;
+  let pending = '', chunk = '', count = 0;
+  const emit = text => { if (text.trim()) { count++; onChunk(text.trim()); } };
+  return {
+    push(text) {
+      pending += text;
+      let match;
+      while ((match = pending.match(boundary))) {
+        chunk += match[0];
+        pending = pending.slice(match[0].length);
+        if (count === 0 || chunk.trim().length >= 40) { emit(chunk); chunk = ''; }
+      }
+    },
+    flush() { emit(chunk + pending); chunk = pending = ''; }
+  };
+}
+
+// One audio element is reused for every sentence, so mobile browsers keep allowing playback
+const speechAudio = new Audio();
+
+function getSpeakingSpeed() {
+  return parseFloat(document.getElementById('ttsSpeed').value) || 1;
+}
+
+function playAudioBlob(blob, signal) {
+  return new Promise((resolve, reject) => {
+    if (signal.aborted) return resolve();
+    const url = URL.createObjectURL(blob);
+    const finish = err => {
+      speechAudio.onended = speechAudio.onerror = null;
+      signal.removeEventListener('abort', onAbort);
+      URL.revokeObjectURL(url);
+      if (currentAudio === speechAudio) currentAudio = null;
+      err ? reject(err) : resolve();
+    };
+    const onAbort = () => finish();
+    signal.addEventListener('abort', onAbort);
+    speechAudio.onended = () => finish();
+    speechAudio.onerror = () => finish(new Error('Audio playback failed.'));
+    speechAudio.src = url;
+    speechAudio.defaultPlaybackRate = speechAudio.playbackRate = getSpeakingSpeed();
+    speechAudio.preservesPitch = true;
+    currentAudio = speechAudio;
+    speechAudio.play().catch(finish);
+  });
+}
+
+// Sentences are synthesized one request at a time (the next is fetched while the current one plays)
+// and played strictly in order
+function createSpeechQueue(synthesize, signal, onFirstAudio) {
+  let fetchChain = Promise.resolve();
+  let playChain = Promise.resolve();
+  let started = false;
+  return {
+    add(text) {
+      const clean = sanitizeTextForTTS(text);
+      if (!clean) return;
+      const audio = fetchChain.then(() => synthesize(clean, signal));
+      fetchChain = audio.catch(() => {});
+      playChain = playChain.then(async () => {
+        const blob = await audio;
+        if (signal.aborted) return;
+        if (!started) { started = true; onFirstAudio(); }
+        await playAudioBlob(blob, signal);
+      });
+      playChain.catch(() => {});
+    },
+    finished: () => playChain
+  };
+}
+
+async function transcribeAudio(audioBlob, { provider, key, lang, mime }, signal) {
+  const extension = mime.includes('mp4') ? 'mp4' : 'webm';
+
+  if (provider === 'elevenlabs') {
+    const formData = new FormData();
+    formData.append('file', audioBlob, `speech.${extension}`);
+    formData.append('model_id', 'scribe_v2');
+    formData.append('language_code', lang);
+    const res = await elevenLabsFetch('/v1/speech-to-text', { method: 'POST', headers: { 'xi-api-key': key }, body: formData, signal });
+    if (!res.ok) throw new Error(`ElevenLabs STT Failed (HTTP ${res.status}): ${await res.text()}`);
+    const data = await res.json();
+    return data.text || data.transcript || "";
+  }
+
+  if (provider === 'cartesia') {
+    const formData = new FormData();
+    formData.append('file', audioBlob, `speech.${extension}`);
+    formData.append('model', 'ink-whisper');
+    formData.append('language', lang);
+    const res = await fetch(`${CARTESIA_API}/stt`, { method: 'POST', headers: cartesiaHeaders(key), body: formData, signal });
+    if (!res.ok) throw new Error(`Cartesia STT Failed (HTTP ${res.status}): ${await res.text()}`);
+    return (await res.json()).text || "";
+  }
+
+  if (provider === 'groq') {
+    const formData = new FormData();
+    formData.append('file', audioBlob, `speech.${extension}`);
+    formData.append('model', 'whisper-large-v3-turbo');
+    formData.append('language', lang);
+    formData.append('response_format', 'json');
+    const res = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', { method: 'POST', headers: { 'Authorization': `Bearer ${key}` }, body: formData, signal });
+    if (!res.ok) throw new Error(`Groq STT Failed (HTTP ${res.status}): ${await res.text()}`);
+    return (await res.json()).text || "";
+  }
+
+  const res = await fetch(`https://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&language=${lang}`, {
+    method: 'POST',
+    headers: { 'Authorization': `Token ${key}`, 'Content-Type': mime },
+    body: audioBlob,
+    signal
+  });
+  if (!res.ok) throw new Error(`Deepgram STT Failed (HTTP ${res.status}): ${await res.text()}`);
+  const data = await res.json();
+  return data.results?.channels[0]?.alternatives[0]?.transcript || "";
+}
+
+async function synthesizeSpeech(text, { voiceTag, key, lang }, signal) {
+  if (voiceTag.startsWith('xi:')) {
+    if (!key) throw new Error("ElevenLabs API Key is required for TTS synthesis.");
+    const res = await elevenLabsFetch(`/v1/text-to-speech/${voiceTag.replace('xi:', '')}?output_format=mp3_22050_32`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'xi-api-key': key },
+      body: JSON.stringify({ text, model_id: "eleven_flash_v2_5", voice_settings: { stability: 0.5, similarity_boost: 0.75 } }),
+      signal
+    });
+    if (!res.ok) throw new Error(`ElevenLabs TTS Failed (HTTP ${res.status}): ${await res.text()}`);
+    return res.blob();
+  }
+
+  if (voiceTag.startsWith('ct:')) {
+    if (!key) throw new Error("Cartesia API Key is required for TTS synthesis.");
+    const res = await fetch(`${CARTESIA_API}/tts/bytes`, {
+      method: 'POST',
+      headers: { ...cartesiaHeaders(key), 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model_id: 'sonic-3',
+        transcript: text,
+        voice: voiceTag.replace('ct:', ''),
+        language: lang,
+        output_format: { container: 'mp3', sample_rate: 44100, bit_rate: 128000 }
+      }),
+      signal
+    });
+    if (!res.ok) throw new Error(`Cartesia TTS Failed (HTTP ${res.status}): ${await res.text()}`);
+    return res.blob();
+  }
+
+  const voiceId = voiceTag.replace('dg:', '');
+  const ttsApiVersion = voiceId.startsWith('flux') ? 'v2' : 'v1';
+  const res = await fetch(`https://api.deepgram.com/${ttsApiVersion}/speak?model=${voiceId}`, {
+    method: 'POST',
+    headers: { 'Authorization': `Token ${key}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text }),
+    signal
+  });
+  if (!res.ok) throw new Error(`Deepgram TTS Failed (HTTP ${res.status}): ${await res.text()}`);
+  return res.blob();
+}
+
 function stopAndSendRecording() {
   if (!mediaRecorder || mediaRecorder.state === "inactive") return;
 
+  mediaRecorder.onstop = () => {
+    runTurn({ audioBlob: new Blob(audioChunks, { type: window.currentRecordingMime || 'audio/webm' }) });
+  };
   mediaRecorder.stop();
   if (mediaRecorder.stream) {
     mediaRecorder.stream.getTracks().forEach(track => track.stop());
@@ -808,230 +1013,176 @@ function stopAndSendRecording() {
 
   isRecording = false;
   updateStatus("statusProc", "statusSubProc", "status-processing");
+}
 
-  mediaRecorder.onstop = async () => {
-    const audioBlob = new Blob(audioChunks, { type: window.currentRecordingMime || 'audio/webm' });
-    const sttProvider = document.getElementById('sttProvider').value;
-    const ttsProvider = document.getElementById('ttsProvider').value;
-    
-    const sttKey = document.getElementById('sttKey').value.trim();
-    const ttsKey = document.getElementById('ttsKey').value.trim();
+// Stop a recording without sending it
+function cancelRecording() {
+  if (mediaRecorder && mediaRecorder.state !== "inactive") {
+    mediaRecorder.onstop = null;
+    mediaRecorder.stop();
+    if (mediaRecorder.stream) mediaRecorder.stream.getTracks().forEach(track => track.stop());
+  }
+  isRecording = false;
+}
 
-    const selectedLang = document.getElementById('selectedLanguage').value || 'en';
-    const selectedVoiceTag = document.getElementById('ttsVoice').value;
-    const rawSystemPrompt = document.getElementById('systemPrompt').value;
+function sendTypedMessage() {
+  const input = document.getElementById('typedMessage');
+  const text = input.value.trim();
+  if (!text) return;
+  if (!document.getElementById('llmKey').value.trim()) {
+    const t = UI_TRANSLATIONS[document.getElementById('uiLanguage').value] || UI_TRANSLATIONS.en;
+    alert(t.reqKey);
+    return;
+  }
+  cancelRecording();
+  stopAssistant();
+  keepScreenAwake();
+  input.value = '';
+  runTurn({ typedText: text });
+}
 
-    const effectiveSystemPrompt = `${rawSystemPrompt}\n\nCRITICAL LANGUAGE DIRECTIVE: Detect the language of the user's LATEST message and respond strictly in that exact same language, regardless of any earlier conversation history.`;
+// One conversation turn: (transcribe) -> stream the AI reply -> speak it sentence by sentence
+async function runTurn({ audioBlob = null, typedText = '' }) {
+  const sttProvider = document.getElementById('sttProvider').value;
+  const ttsProvider = document.getElementById('ttsProvider').value;
+  const sttKey = document.getElementById('sttKey').value.trim();
+  const ttsKey = document.getElementById('ttsKey').value.trim();
+  const selectedLang = document.getElementById('selectedLanguage').value || 'en';
+  const selectedVoiceTag = document.getElementById('ttsVoice').value;
+  const rawSystemPrompt = document.getElementById('systemPrompt').value;
+  const effectiveSystemPrompt = `${rawSystemPrompt}\n\nCRITICAL LANGUAGE DIRECTIVE: Detect the language of the user's LATEST message and respond strictly in that exact same language, regardless of any earlier conversation history.`;
 
-    const logs = document.getElementById('debugLogs');
-    const rawLogEl = document.getElementById('geminiRawLog');
+  const logs = document.getElementById('debugLogs');
+  const rawLogEl = document.getElementById('geminiRawLog');
+  const userBox = document.getElementById('userPromptBox');
+  const assistantBox = document.getElementById('assistantResponseBox');
 
-    const userBox = document.getElementById('userPromptBox');
-    const assistantBox = document.getElementById('assistantResponseBox');
+  pipelineAbortController = new AbortController();
+  const signal = pipelineAbortController.signal;
+  updateStatus("statusProc", "statusSubProc", "status-processing");
 
-    pipelineAbortController = new AbortController();
-    const signal = pipelineAbortController.signal;
+  try {
+    const t0 = performance.now();
 
-    try {
+    // 1. Speech-to-text (skipped for typed messages)
+    let userText = typedText;
+    let sttLabel = 'Typed message';
+    if (audioBlob) {
       if (logs) logs.innerHTML = `Uploading audio to ${sttProvider.toUpperCase()} STT...`;
-      const t0 = performance.now();
-
-      // 1. STT Transcribe
-      let userText = "";
-      if (sttProvider === 'elevenlabs') {
-        const formData = new FormData();
-        formData.append('file', audioBlob, 'speech.webm');
-        formData.append('model_id', 'scribe_v2');
-        if (selectedLang) formData.append('language_code', selectedLang);
-
-        const sttResponse = await elevenLabsFetch('/v1/speech-to-text', {
-          method: 'POST',
-          headers: { 'xi-api-key': sttKey },
-          body: formData,
-          signal
-        });
-
-        if (!sttResponse.ok) {
-          const errText = await sttResponse.text();
-          throw new Error(`ElevenLabs STT Failed (HTTP ${sttResponse.status}): ${errText}`);
-        }
-        const sttData = await sttResponse.json();
-        userText = sttData.text || sttData.transcript || "";
-        checkSttCredits();
-      } else if (sttProvider === 'cartesia') {
-        const extension = (window.currentRecordingMime || 'audio/webm').includes('mp4') ? 'mp4' : 'webm';
-        const formData = new FormData();
-        formData.append('file', audioBlob, `speech.${extension}`);
-        formData.append('model', 'ink-whisper');
-        formData.append('language', selectedLang);
-
-        const sttResponse = await fetch(`${CARTESIA_API}/stt`, {
-          method: 'POST',
-          headers: cartesiaHeaders(sttKey),
-          body: formData,
-          signal
-        });
-
-        if (!sttResponse.ok) {
-          const errText = await sttResponse.text();
-          throw new Error(`Cartesia STT Failed (HTTP ${sttResponse.status}): ${errText}`);
-        }
-        const sttData = await sttResponse.json();
-        userText = sttData.text || "";
-      } else {
-        const sttResponse = await fetch(`https://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&language=${selectedLang}`, {
-          method: 'POST',
-          headers: { 
-            'Authorization': `Token ${sttKey}`, 
-            'Content-Type': window.currentRecordingMime || 'audio/webm' 
-          },
-          body: audioBlob,
-          signal
-        });
-
-        if (!sttResponse.ok) {
-          const sttErr = await sttResponse.text();
-          throw new Error(`Deepgram STT Failed (HTTP ${sttResponse.status}): ${sttErr}`);
-        }
-        const sttData = await sttResponse.json();
-        userText = sttData.results?.channels[0]?.alternatives[0]?.transcript || "";
-      }
-
+      userText = await transcribeAudio(audioBlob, { provider: sttProvider, key: sttKey, lang: selectedLang, mime: window.currentRecordingMime || 'audio/webm' }, signal);
       if (!userText.trim()) throw new Error(`No speech detected. Make sure the Chat Language (${selectedLang.toUpperCase()}) matches the language you're speaking.`);
+      sttLabel = `STT (${sttProvider.toUpperCase()} ${selectedLang.toUpperCase()}): ${(performance.now() - t0).toFixed(0)} ms`;
+      if (sttProvider === 'elevenlabs') checkSttCredits();
+    }
 
-      if (userBox) {
-        userBox.innerText = userText;
-        userBox.classList.remove('placeholder');
-      }
+    if (userBox) {
+      userBox.innerText = userText;
+      userBox.classList.remove('placeholder');
+    }
+    if (logs) logs.innerHTML = `${sttLabel}<br>Calling LLM Engine...`;
 
-      const t1 = performance.now();
-      const sttTime = (t1 - t0).toFixed(0);
-      if (logs) logs.innerHTML = `STT (${sttProvider.toUpperCase()} ${selectedLang.toUpperCase()}): ${sttTime} ms<br>Calling LLM Engine...`;
+    conversationHistory.push({ role: "user", content: userText });
+    if (conversationHistory.length > 8) conversationHistory = conversationHistory.slice(-8);
 
-      conversationHistory.push({ role: "user", content: userText });
-      if (conversationHistory.length > 8) conversationHistory = conversationHistory.slice(-8);
-
-      // 2. LLM Stream Call
-      const { text: aiText, model: modelUsed, status, ttft, totalTime: llmTime, chunkCount } = await streamSelectedLLM(effectiveSystemPrompt, conversationHistory, signal);
-
-      const cleanAiText = sanitizeTextForTTS(aiText);
-
+    // 2. Stream the reply; each finished sentence is handed to speech right away
+    let firstAudioAt = null;
+    const speech = createSpeechQueue(
+      (text, sig) => synthesizeSpeech(text, { voiceTag: selectedVoiceTag, key: ttsKey, lang: selectedLang }, sig),
+      signal,
+      () => { firstAudioAt = performance.now(); updateStatus("statusSpeak", "statusSubSpeak", "status-speaking"); }
+    );
+    const splitter = createSentenceSplitter(sentence => speech.add(sentence));
+    let raw = '', fed = '';
+    const llm = await streamSelectedLLM(effectiveSystemPrompt, conversationHistory, signal, delta => {
+      raw += delta;
+      // Hold back a half-received tag so partial "<think" markup is never spoken
+      const visible = stripThinking(raw).replace(/<[^>]*$/, '');
+      if (visible.length > fed.length) { splitter.push(visible.slice(fed.length)); fed = visible; }
       if (assistantBox) {
-        assistantBox.innerText = cleanAiText || "I understand.";
+        assistantBox.innerText = sanitizeTextForTTS(visible) || '…';
         assistantBox.classList.remove('placeholder');
       }
+    });
+    splitter.flush();
 
-      if (rawLogEl) {
-        const providerName = PROVIDER_PRESETS[document.getElementById('llmProvider').value].name;
-        rawLogEl.innerText = `[DEBUG INSPECTOR]\nProvider: ${providerName}\nModel ID: ${modelUsed}\nHTTP Status: ${status} OK\nLanguage Directive: Dynamic (Matches Latest User Prompt)\nTime to First Token (TTFT): ${ttft} ms\nTotal LLM Latency: ${llmTime} ms\nVoice Tag: ${selectedVoiceTag}\n\n--- RAW AI RESPONSE ---\n"${aiText}"\n\n--- SANITIZED FOR TTS ---\n"${cleanAiText}"`;
-      }
-
-      conversationHistory.push({ role: "assistant", content: aiText });
-
-      if (logs) logs.innerHTML = `STT (${sttProvider.toUpperCase()} ${selectedLang.toUpperCase()}): ${sttTime} ms<br>LLM (${modelUsed}): ${llmTime} ms (TTFT: ${ttft} ms)<br>Generating TTS...`;
-
-      // 3. TTS Generation Dispatcher
-      const ttsStart = performance.now();
-      let audioBlobResponse;
-
-      if (selectedVoiceTag.startsWith('xi:')) {
-        const voiceId = selectedVoiceTag.replace('xi:', '');
-        if (!ttsKey) throw new Error("ElevenLabs API Key is required for TTS synthesis.");
-
-        const ttsResponse = await elevenLabsFetch(`/v1/text-to-speech/${voiceId}?output_format=mp3_22050_32`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'xi-api-key': ttsKey
-          },
-          body: JSON.stringify({
-            text: cleanAiText || "I understand.",
-            model_id: "eleven_flash_v2_5",
-            voice_settings: { stability: 0.5, similarity_boost: 0.75 }
-          }),
-          signal
-        });
-
-        if (!ttsResponse.ok) {
-          const xiErr = await ttsResponse.text();
-          throw new Error(`ElevenLabs TTS Failed (HTTP ${ttsResponse.status}): ${xiErr}`);
-        }
-        audioBlobResponse = await ttsResponse.blob();
-        checkTtsCredits();
-
-      } else if (selectedVoiceTag.startsWith('ct:')) {
-        if (!ttsKey) throw new Error("Cartesia API Key is required for TTS synthesis.");
-
-        const ttsResponse = await fetch(`${CARTESIA_API}/tts/bytes`, {
-          method: 'POST',
-          headers: { ...cartesiaHeaders(ttsKey), 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model_id: 'sonic-3',
-            transcript: cleanAiText || "I understand.",
-            voice: selectedVoiceTag.replace('ct:', ''),
-            language: selectedLang,
-            output_format: { container: 'mp3', sample_rate: 44100, bit_rate: 128000 }
-          }),
-          signal
-        });
-
-        if (!ttsResponse.ok) {
-          const ctErr = await ttsResponse.text();
-          throw new Error(`Cartesia TTS Failed (HTTP ${ttsResponse.status}): ${ctErr}`);
-        }
-        audioBlobResponse = await ttsResponse.blob();
-
-      } else {
-        const voiceId = selectedVoiceTag.replace('dg:', '');
-        const ttsApiVersion = voiceId.startsWith('flux') ? 'v2' : 'v1';
-
-        const ttsResponse = await fetch(`https://api.deepgram.com/${ttsApiVersion}/speak?model=${voiceId}`, {
-          method: 'POST',
-          headers: { 'Authorization': `Token ${ttsKey}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: cleanAiText || "I understand." }),
-          signal
-        });
-
-        if (!ttsResponse.ok) {
-          const dgErr = await ttsResponse.text();
-          throw new Error(`Deepgram TTS Failed (HTTP ${ttsResponse.status}): ${dgErr}`);
-        }
-        audioBlobResponse = await ttsResponse.blob();
-      }
-
-      const ttsTime = (performance.now() - ttsStart).toFixed(0);
-      const totalTime = (performance.now() - t0).toFixed(0);
-
-      if (logs) {
-        logs.innerHTML = `STT (${sttProvider.toUpperCase()} ${selectedLang.toUpperCase()}): ${sttTime} ms<br>LLM (${modelUsed}): ${llmTime} ms<br>TTS: ${ttsTime} ms<br><br><strong style="color:#fff;">Total Round Trip: ${totalTime} ms</strong>`;
-      }
-
-      // 4. Audio Playback
-      const audioUrl = URL.createObjectURL(audioBlobResponse);
-      currentAudio = new Audio(audioUrl);
-      
-      updateStatus("statusSpeak", "statusSubSpeak", "status-speaking");
-      currentAudio.play();
-
-      currentAudio.onended = () => {
-        currentAudio = null;
-        updateStatus("statusReady", "statusSubReady", "status-idle");
-      };
-
-    } catch (error) {
-      if (error.name === 'AbortError') {
-        console.log("Pipeline aborted by user interruption.");
-        return;
-      }
-      console.error("Pipeline Error:", error);
-      if (rawLogEl) {
-        rawLogEl.innerText = `[DEBUG INSPECTOR ERROR TRACE]\n${error.message}`;
-      }
-      updateStatus("statusErr", "statusSubErr", "status-recording");
-      setTimeout(() => updateStatus("statusReady", "statusSubReady", "status-idle"), 3000);
+    const aiText = stripThinking(llm.text);
+    const cleanAiText = sanitizeTextForTTS(aiText);
+    if (!cleanAiText) speech.add("I understand.");
+    if (assistantBox) {
+      assistantBox.innerText = cleanAiText || "I understand.";
+      assistantBox.classList.remove('placeholder');
     }
-  };
+    conversationHistory.push({ role: "assistant", content: aiText });
+
+    if (rawLogEl) {
+      const providerName = PROVIDER_PRESETS[document.getElementById('llmProvider').value].name;
+      rawLogEl.innerText = `[DEBUG INSPECTOR]\nProvider: ${providerName}\nModel ID: ${llm.model}\nHTTP Status: ${llm.status} OK\nLanguage Directive: Dynamic (Matches Latest User Prompt)\nTime to First Token (TTFT): ${llm.ttft} ms\nTotal LLM Latency: ${llm.totalTime} ms\nVoice Tag: ${selectedVoiceTag}\n\n--- RAW AI RESPONSE ---\n"${llm.text}"\n\n--- SANITIZED FOR TTS ---\n"${cleanAiText}"`;
+    }
+    if (logs) logs.innerHTML = `${sttLabel}<br>LLM (${llm.model}): ${llm.totalTime} ms (TTFT: ${llm.ttft} ms)<br>Speaking...`;
+
+    // 3. Wait until every sentence has been spoken
+    await speech.finished();
+    if (signal.aborted) return;
+    if (ttsProvider === 'elevenlabs') checkTtsCredits();
+
+    if (logs) {
+      const firstAudio = firstAudioAt ? `${(firstAudioAt - t0).toFixed(0)} ms` : 'n/a';
+      logs.innerHTML = `${sttLabel}<br>LLM (${llm.model}): ${llm.totalTime} ms (TTFT: ${llm.ttft} ms)<br><strong style="color: var(--text);">Time to first audio: ${firstAudio}</strong><br>Total until speech finished: ${(performance.now() - t0).toFixed(0)} ms`;
+    }
+    updateStatus("statusReady", "statusSubReady", "status-idle");
+
+  } catch (error) {
+    if (error.name === 'AbortError' || signal.aborted) {
+      console.log("Pipeline aborted by user interruption.");
+      return;
+    }
+    console.error("Pipeline Error:", error);
+    if (rawLogEl) {
+      rawLogEl.innerText = `[DEBUG INSPECTOR ERROR TRACE]\n${error.message}`;
+    }
+    updateStatus("statusErr", "statusSubErr", "status-recording");
+    setTimeout(() => updateStatus("statusReady", "statusSubReady", "status-idle"), 3000);
+  }
 }
+
+function onSpeedChange() {
+  localStorage.setItem('tts_speed', document.getElementById('ttsSpeed').value);
+  if (currentAudio) currentAudio.playbackRate = getSpeakingSpeed();
+}
+
+// Keep the screen on once a conversation has started (re-acquired when the app comes back to the front)
+let wakeLock = null;
+let wantWakeLock = false;
+async function keepScreenAwake() {
+  wantWakeLock = true;
+  if (wakeLock || !('wakeLock' in navigator) || document.visibilityState !== 'visible') return;
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release', () => { wakeLock = null; });
+  } catch (e) {
+    wakeLock = null;
+  }
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && wantWakeLock) keepScreenAwake();
+});
+
+// Theme: 'system' follows the device; 'light' / 'dark' override it (theme.js applies it before first paint)
+function applyTheme() {
+  const theme = localStorage.getItem('theme') || 'system';
+  if (theme === 'system') delete document.documentElement.dataset.theme;
+  else document.documentElement.dataset.theme = theme;
+  const dark = theme === 'dark' || (theme === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+  document.querySelector('meta[name="theme-color"]').setAttribute('content', dark ? '#181818' : '#ffffff');
+}
+
+function onThemeChange() {
+  const theme = document.getElementById('themeSelect').value;
+  if (theme === 'system') localStorage.removeItem('theme');
+  else localStorage.setItem('theme', theme);
+  applyTheme();
+}
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
 
 function updateStatus(titleKey, subtitleKey, className) {
   const lang = document.getElementById('uiLanguage') ? document.getElementById('uiLanguage').value : 'en';
@@ -1080,7 +1231,13 @@ function applyUILanguage() {
     'btn-clear': t.clear, 
     'lbl-debug': t.debug,
     'lbl-license': t.licenseText || 'AGPLv3 License',
-    'lbl-help': t.helpText || 'Help'
+    'lbl-help': t.helpText || 'Help',
+    'lbl-speed': t.speed,
+    'btn-send-typed': t.send,
+    'lbl-theme': t.theme,
+    'opt-theme-system': t.themeSystem,
+    'opt-theme-light': t.themeLight,
+    'opt-theme-dark': t.themeDark
   };
   for (const [id, text] of Object.entries(map)) {
     const el = document.getElementById(id);
@@ -1092,6 +1249,7 @@ function applyUILanguage() {
   if (userBox && userBox.classList.contains('placeholder')) userBox.innerText = t.userPlaceholder;
   const assistantBox = document.getElementById('assistantResponseBox');
   if (assistantBox && assistantBox.classList.contains('placeholder')) assistantBox.innerText = t.aiPlaceholder;
+  document.getElementById('typedMessage').placeholder = t.typePh;
   const ctrls = document.getElementById('lbl-ctrls');
   if (ctrls && t.ctrls) ctrls.innerHTML = t.ctrls;
   updateSttKeyField();
